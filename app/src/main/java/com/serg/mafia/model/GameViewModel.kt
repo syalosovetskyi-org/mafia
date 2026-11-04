@@ -408,9 +408,9 @@ class GameViewModel : ViewModel() {
         val maniac = alive.count { it.role == Role.MANIAC }
         val red = alive.size - black - maniac
         val winner = when {
-            black == 0 && maniac == 0 -> Faction.RED
+            red > 0 && black == 0 && maniac == 0 -> Faction.RED
             black == 0 && maniac > 0 && alive.size <= 2 -> Faction.MANIAC
-            black > 0 && black >= red + maniac -> Faction.BLACK
+            black > 0 && (if (maniac > 0) black > red + maniac else black >= red) -> Faction.BLACK
             else -> null
         }
         return if (winner != null) {
@@ -418,6 +418,11 @@ class GameViewModel : ViewModel() {
                 phase = Phase.GAME_OVER,
                 winner = winner,
                 log = state.log + LogEntry(winnerKey(winner)),
+            )
+        } else if (alive.isEmpty()) {
+            state.copy(
+                phase = Phase.GAME_OVER,
+                winner = null,
             )
         } else {
             state
