@@ -1,6 +1,8 @@
 package com.serg.mafia.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -41,6 +43,7 @@ fun DealScreen(vm: GameViewModel) {
         subtitle = t("deal_sub", s.dealIndex + 1, s.players.size),
         bottom = {
             BigButton(if (seen) t("memorized") else t("look_first"), enabled = seen) {
+                held = false
                 vm.dealNext()
             }
         },
@@ -73,7 +76,11 @@ fun DealScreen(vm: GameViewModel) {
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Crossfade(targetState = held, label = "role-reveal") { revealed ->
+                Crossfade(
+                    targetState = held,
+                    animationSpec = if (held) tween(150) else snap(),
+                    label = "role-reveal",
+                ) { revealed ->
                     if (!revealed) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
