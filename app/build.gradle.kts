@@ -4,6 +4,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 // Релизный ключ: локально — keystore.properties рядом с проектом,
@@ -39,6 +41,17 @@ android {
         versionName = (findProperty("versionName") as String?) ?: "1.0"
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("personal") {
+            dimension = "distribution"
+        }
+        create("play") {
+            dimension = "distribution"
+            applicationId = "com.serg.mafia"
+        }
+    }
+
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
@@ -68,6 +81,10 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
     lint {
         // Детектор NonNullableMutableLiveData падает на связке AGP 8.7 + Kotlin 2.1 —
@@ -94,4 +111,25 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     testImplementation("junit:junit:4.13.2")
+
+    "playImplementation"(platform("com.google.firebase:firebase-bom:33.7.0"))
+    "playImplementation"("com.google.firebase:firebase-crashlytics")
+}
+
+// Отключаем задачи Google Services и Crashlytics для flavor personal,
+// чтобы сборка personal не падала при отсутствии google-services.json.
+tasks.matching {
+    it.name.contains("Personal", ignoreCase = true) &&
+        (it.name.contains("GoogleServices") || it.name.contains("Crashlytics"))
+}.configureEach {
+    enabled = false
+}
+
+afterEvaluate {
+    tasks.matching {
+        it.name.contains("Personal", ignoreCase = true) &&
+            (it.name.contains("GoogleServices") || it.name.contains("Crashlytics"))
+    }.configureEach {
+        enabled = false
+    }
 }
