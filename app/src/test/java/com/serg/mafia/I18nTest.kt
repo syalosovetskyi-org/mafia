@@ -50,4 +50,25 @@ class I18nTest {
     fun `неизвестный ключ возвращает сам ключ, а не падает`() {
         assertEquals("no_such_key", tr(Lang.UK, "no_such_key"))
     }
+
+    @Test
+    fun `победа города в украинском пишется Перемогло місто с кириллической і`() {
+        val text = tr(Lang.UK, "win_red")
+        assertEquals("Перемогло місто", text)
+        assertTrue(text.contains('\u0456'))
+        org.junit.Assert.assertFalse(text.contains('i'))
+    }
+
+    @Test
+    fun `украинские строки не содержат латинскую i вместо кириллической`() {
+        val ukStrings = STRINGS[Lang.UK]!!
+        val cyrillicWithLatinI = Regex("([а-яА-ЯёЁіїєґІЇЄҐ]*[iI][а-яА-ЯёЁіїєґІЇЄҐ]+|[а-яА-ЯёЁіїєґІЇЄҐ]+[iI][а-яА-ЯёЁіїєґІЇЄҐ]*)")
+        val errors = mutableListOf<String>()
+        ukStrings.forEach { (key, value) ->
+            if (cyrillicWithLatinI.containsMatchIn(value)) {
+                errors += "$key: $value"
+            }
+        }
+        assertTrue("Найдены украинские слова с латинской i: $errors", errors.isEmpty())
+    }
 }

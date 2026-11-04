@@ -1,11 +1,17 @@
 package com.serg.mafia
 
+import androidx.lifecycle.SavedStateHandle
+import com.serg.mafia.SecurityUtils
 import com.serg.mafia.model.CountdownTimer
 import com.serg.mafia.model.Faction
 import com.serg.mafia.model.GameViewModel
 import com.serg.mafia.model.Phase
 import com.serg.mafia.model.Role
 import com.serg.mafia.model.Setup
+import com.serg.mafia.ui.ErrorRed
+import com.serg.mafia.ui.Ink
+import com.serg.mafia.ui.Surface1
+import com.serg.mafia.ui.Surface2
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -544,5 +550,137 @@ class GameLogicTest {
         assertTrue(vm.voteLeaders.contains(c2))
         vm.skipVote()
         assertEquals(Phase.NIGHT, vm.s.phase)
+    }
+
+    @Test
+    fun `backToSetup сохраняет состав и игроков после партии, а reset сбрасывает всё`() {
+        val vm = game(players = 5, doctor = false, sheriff = false)
+        vm.renamePlayer(0, "Алиса")
+        vm.renamePlayer(1, "Боб")
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+
+        // Возврат к настройкам сохраняет имена и состав стола
+        vm.backToSetup()
+        assertEquals(Phase.SETUP, vm.s.phase)
+        assertEquals(5, vm.s.setup.playerCount)
+        assertEquals("Алиса", vm.s.setup.names[0])
+        assertEquals("Боб", vm.s.setup.names[1])
+
+        // А reset() сбрасывает к дефолтным 10 игрокам
+        vm.reset()
+        assertEquals(10, vm.s.setup.playerCount)
+        assertFalse(vm.s.setup.names.contains("Алиса"))
+    }
+
+    @Test
+    fun `состояние игры сохраняется в SavedStateHandle и восстанавливается после смерти процесса`() {
+        val handle = SavedStateHandle()
+        val vm1 = GameViewModel(handle).apply {
+            updateSetup {
+                Setup(
+                    playerCount = 6,
+                    names = listOf("Игрок 1", "Игрок 2", "Игрок 3", "Игрок 4", "Игрок 5", "Игрок 6"),
+                    withDoctor = false,
+                    withSheriff = false,
+                )
+            }
+            startDeal()
+            dealNext() // просмотрен 1-й игрок
+            addFoul(s.players[0].id)
+            addFoul(s.players[0].id) // 2 фола игроку 0
+        }
+        assertEquals(1, vm1.s.dealIndex)
+        assertEquals(2, vm1.s.player(vm1.s.players[0].id).fouls)
+        assertEquals(Phase.DEAL, vm1.s.phase)
+
+        // Имитируем смерть процесса: создаём новый экземпляр ViewModel с тем же SavedStateHandle
+        val vm2 = GameViewModel(handle)
+        assertEquals(vm1.s.phase, vm2.s.phase)
+        assertEquals(vm1.s.dealIndex, vm2.s.dealIndex)
+        assertEquals(vm1.s.players.size, vm2.s.players.size)
+        assertEquals(2, vm2.s.player(vm2.s.players[0].id).fouls)
+        assertEquals(vm1.s.setup.playerCount, vm2.s.setup.playerCount)
+        assertEquals(vm1.s.log.size, vm2.s.log.size)
+    }
+
+    @Test
+    fun `шаги назад работают для раздачи, знакомства и ночи`() {
+        val vm = game(players = 6, doctor = false, sheriff = false)
+        // Раздача: шаг вперёд и назад
+        assertEquals(0, vm.s.dealIndex)
+        vm.dealBack() // на 0 не уходит в минус
+        assertEquals(0, vm.s.dealIndex)
+        vm.dealNext()
+        assertEquals(1, vm.s.dealIndex)
+        vm.dealBack()
+        assertEquals(0, vm.s.dealIndex)
+
+        // Знакомство: шаг вперёд и назад
+        vm.finishDeal()
+        assertEquals(Phase.INTRO_NIGHT, vm.s.phase)
+        assertEquals(0, vm.s.introStepIndex)
+        vm.introBack()
+        assertEquals(0, vm.s.introStepIndex)
+        vm.introNext()
+        assertEquals(1, vm.s.introStepIndex)
+        vm.introBack()
+        assertEquals(0, vm.s.introStepIndex)
+
+        // Ночь: шаг вперёд и назад
+        vm.finishIntro(); vm.finishSpeechRound()
+        assertEquals(Phase.NIGHT, vm.s.phase)
+        assertEquals(0, vm.s.nightStepIndex)
+        vm.nightBack()
+        assertEquals(0, vm.s.nightStepIndex)
+        if (vm.s.nightSteps.size > 1) {
+            vm.nightNext()
+            assertEquals(1, vm.s.nightStepIndex)
+            vm.nightBack()
+            assertEquals(0, vm.s.nightStepIndex)
+        }
+    }
+
+    @Test
+    fun `экраны с тайными ролями требуют FLAG_SECURE`() {
+        assertTrue(SecurityUtils.isSecureScreen(Phase.DEAL, cheatOpen = false))
+        assertTrue(SecurityUtils.isSecureScreen(Phase.INTRO_NIGHT, cheatOpen = false))
+        assertTrue(SecurityUtils.isSecureScreen(Phase.NIGHT, cheatOpen = false))
+
+        assertFalse(SecurityUtils.isSecureScreen(Phase.SETUP, cheatOpen = false))
+        assertFalse(SecurityUtils.isSecureScreen(Phase.DAY, cheatOpen = false))
+        assertFalse(SecurityUtils.isSecureScreen(Phase.VOTE, cheatOpen = false))
+        assertFalse(SecurityUtils.isSecureScreen(Phase.MORNING, cheatOpen = false))
+        assertFalse(SecurityUtils.isSecureScreen(Phase.GAME_OVER, cheatOpen = false))
+
+        assertTrue(SecurityUtils.isSecureScreen(Phase.SETUP, cheatOpen = true))
+        assertTrue(SecurityUtils.isSecureScreen(Phase.DAY, cheatOpen = true))
+        assertTrue(SecurityUtils.isSecureScreen(Phase.VOTE, cheatOpen = true))
+    }
+
+    @Test
+    fun `контраст цвета ошибки ErrorRed соответствует стандарту WCAG AA не менее 4_5 к 1`() {
+        fun relLuminance(color: androidx.compose.ui.graphics.Color): Double {
+            fun ch(c: Float): Double {
+                val d = c.toDouble()
+                return if (d <= 0.03928) d / 12.92 else Math.pow((d + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * ch(color.red) + 0.7152 * ch(color.green) + 0.0722 * ch(color.blue)
+        }
+
+        fun contrastRatio(c1: androidx.compose.ui.graphics.Color, c2: androidx.compose.ui.graphics.Color): Double {
+            val l1 = relLuminance(c1)
+            val l2 = relLuminance(c2)
+            val lighter = Math.max(l1, l2)
+            val darker = Math.min(l1, l2)
+            return (lighter + 0.05) / (darker + 0.05)
+        }
+
+        val contrastWithInk = contrastRatio(ErrorRed, Ink)
+        val contrastWithSurface1 = contrastRatio(ErrorRed, Surface1)
+        val contrastWithSurface2 = contrastRatio(ErrorRed, Surface2)
+
+        assertTrue("Контраст на Ink ($contrastWithInk) должен быть >= 4.5", contrastWithInk >= 4.5)
+        assertTrue("Контраст на Surface1 ($contrastWithSurface1) должен быть >= 4.5", contrastWithSurface1 >= 4.5)
+        assertTrue("Контраст на Surface2 ($contrastWithSurface2) должен быть >= 4.5", contrastWithSurface2 >= 4.5)
     }
 }
