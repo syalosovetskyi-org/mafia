@@ -109,22 +109,27 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    private fun advancePhaseAfterSpeeches(st: GameState): GameState = when (st.phase) {
+        Phase.INTRO_DAY -> beginNight(st)
+        // Круг закрыт: если никого не выставили — голосовать не за кого, сразу ночь.
+        Phase.DAY -> if (st.candidates.isEmpty()) {
+            beginNight(st.copy(log = st.log + LogEntry("log_no_nominations")))
+        } else {
+            st.copy(phase = Phase.VOTE, votes = st.candidates.associateWith { 0 })
+        }
+        else -> st
+    }
+
     /** Речь закончена — передаём слово дальше, а если круг закрыт, идём в следующую фазу. */
     fun finishSpeech() {
-        val speaker = s.speakerId ?: return
-        var st = s.copy(spokenIds = s.spokenIds + speaker)
-        st = nextSpeakerState(st)
+        val speaker = s.speakerId
+        var st = if (speaker != null) {
+            nextSpeakerState(s.copy(spokenIds = s.spokenIds + speaker))
+        } else {
+            s
+        }
         s = if (st.speakerId == null) {
-            when (s.phase) {
-                Phase.INTRO_DAY -> beginNight(st)
-                // Круг закрыт: если никого не выставили — голосовать не за кого, сразу ночь.
-                Phase.DAY -> if (st.candidates.isEmpty()) {
-                    beginNight(st.copy(log = st.log + LogEntry("log_no_nominations")))
-                } else {
-                    st.copy(phase = Phase.VOTE, votes = st.candidates.associateWith { 0 })
-                }
-                else -> st
-            }
+            advancePhaseAfterSpeeches(st)
         } else {
             st
         }
@@ -333,7 +338,12 @@ class GameViewModel : ViewModel() {
         )
         if (fouls >= 3) {
             st = st.copy(nominationsBy = st.nominationsBy.filterValues { it != playerId } - playerId)
-            if (st.speakerId == playerId) st = nextSpeakerState(st.copy(spokenIds = st.spokenIds + playerId))
+            if (st.speakerId == playerId) {
+                st = nextSpeakerState(st.copy(spokenIds = st.spokenIds + playerId))
+                if (st.speakerId == null) {
+                    st = advancePhaseAfterSpeeches(st)
+                }
+            }
         }
         s = withWinCheck(st)
     }
