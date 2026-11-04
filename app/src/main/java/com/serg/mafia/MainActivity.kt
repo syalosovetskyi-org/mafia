@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,23 +111,31 @@ private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
     var cheatOpen by remember { mutableStateOf(false) }
     var musicOpen by remember { mutableStateOf(false) }
     var exitOpen by remember { mutableStateOf(false) }
+    var lastSfxKey by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Музыка и сигналы едут за фазой партии.
     LaunchedEffect(s.phase, s.nightNumber, s.dayNumber) {
+        val sfxKey = "${s.phase}_${s.nightNumber}_${s.dayNumber}"
+        val playSfx = lastSfxKey != sfxKey
+        if (playSfx) {
+            lastSfxKey = sfxKey
+        }
         when (s.phase) {
             Phase.SETUP -> music.stop()
             Phase.DEAL -> music.play(Track.NIGHT)
             Phase.INTRO_NIGHT -> {
                 music.play(Track.NIGHT)
-                music.sfx(Sfx.GONG)
+                if (playSfx) music.sfx(Sfx.GONG)
             }
             Phase.NIGHT -> {
                 music.play(Track.NIGHT)
-                music.sfx(Sfx.GONG)
+                if (playSfx) music.sfx(Sfx.GONG)
             }
             Phase.MORNING -> {
                 music.play(Track.DAY)
-                if (s.lastNight.killed.isEmpty()) music.sfx(Sfx.MORNING) else music.sfx(Sfx.SHOT)
+                if (playSfx) {
+                    if (s.lastNight.killed.isEmpty()) music.sfx(Sfx.MORNING) else music.sfx(Sfx.SHOT)
+                }
             }
             Phase.INTRO_DAY, Phase.DAY -> music.play(Track.DAY)
             Phase.VOTE -> music.play(Track.VOTE)
