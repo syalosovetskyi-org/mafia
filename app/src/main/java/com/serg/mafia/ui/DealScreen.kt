@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +34,7 @@ fun DealScreen(vm: GameViewModel) {
     val s = vm.s
     val player = s.players.getOrNull(s.dealIndex) ?: return
     var held by remember(s.dealIndex) { mutableStateOf(false) }
-    var seen by remember(s.dealIndex) { mutableStateOf(false) }
+    var seen by rememberSaveable(s.dealIndex) { mutableStateOf(false) }
 
     Screen(
         title = t("deal_title"),
