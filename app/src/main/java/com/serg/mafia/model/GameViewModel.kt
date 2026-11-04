@@ -3,16 +3,30 @@ package com.serg.mafia.model
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 
 /**
  * Вся партия живёт здесь: ViewModel переживает поворот и сворачивание,
  * а телефон в мафии крутится по рукам постоянно.
  */
-class GameViewModel : ViewModel() {
+class GameViewModel(
+    private val savedStateHandle: SavedStateHandle? = null,
+) : ViewModel() {
 
-    var s by mutableStateOf(GameState())
-        private set
+    var s by mutableStateOf(savedStateHandle?.get<GameState>(KEY_STATE) ?: GameState())
+        private set(value) {
+            field = value
+            savedStateHandle?.set(KEY_STATE, value)
+        }
+
+    init {
+        savedStateHandle?.set(KEY_STATE, s)
+    }
+
+    companion object {
+        const val KEY_STATE = "mafia_game_state"
+    }
 
     /** Как называть игрока без имени — шаблон приходит из UI на языке интерфейса. */
     var defaultNamePattern: String = "Player %d"
@@ -73,6 +87,12 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    fun dealBack() {
+        if (s.dealIndex > 0) {
+            s = s.copy(dealIndex = s.dealIndex - 1)
+        }
+    }
+
     // ------------------------------------------------------------- знакомство
     fun introNext() {
         val next = s.introStepIndex + 1
@@ -80,6 +100,12 @@ class GameViewModel : ViewModel() {
             startSpeechRound(Phase.INTRO_DAY, s.copy(dayNumber = 0))
         } else {
             s.copy(introStepIndex = next)
+        }
+    }
+
+    fun introBack() {
+        if (s.introStepIndex > 0) {
+            s = s.copy(introStepIndex = s.introStepIndex - 1)
         }
     }
 

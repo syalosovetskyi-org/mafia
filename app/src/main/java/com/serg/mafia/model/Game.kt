@@ -22,7 +22,7 @@ data class Player(
     val speechSkipPending: Boolean = false,
     val deathReasonKey: String? = null,
     val deathDay: Int = 0,
-)
+) : java.io.Serializable
 
 /** Что роли выбрали этой ночью. Заполняется по шагам, применяется в конце ночи. */
 data class NightActions(
@@ -33,10 +33,10 @@ data class NightActions(
     val doctorTarget: Int? = null,
     val sheriffCheck: Int? = null,
     val maniacTarget: Int? = null,
-)
+) : java.io.Serializable
 
 /** Запись журнала: ключ перевода и подстановки — язык выбирается при показе. */
-data class LogEntry(val key: String, val args: List<Any> = emptyList())
+data class LogEntry(val key: String, val args: List<Any> = emptyList()) : java.io.Serializable
 
 /** Один шаг ночи: кого будим и что он выбирает (тексты — ключи перевода). */
 data class NightStep(
@@ -48,7 +48,7 @@ data class NightStep(
     /** Показывать ли, кто из списка комиссар (шаг дона). */
     val revealSheriff: Boolean = false,
     val allowSkip: Boolean = true,
-)
+) : java.io.Serializable
 
 data class NightOutcome(
     val killed: List<Int> = emptyList(),
@@ -56,7 +56,7 @@ data class NightOutcome(
     val blocked: Int? = null,
     val sheriffResult: Pair<Int, Faction>? = null,
     val donFoundSheriff: Boolean = false,
-)
+) : java.io.Serializable
 
 data class GameState(
     val setup: Setup = Setup(),
@@ -81,7 +81,7 @@ data class GameState(
 
     val log: List<LogEntry> = emptyList(),
     val winner: Faction? = null,
-) {
+) : java.io.Serializable {
     val alivePlayers: List<Player> get() = players.filter { it.alive }
 
     /** Кандидаты дня в порядке появления. */

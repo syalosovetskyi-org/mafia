@@ -49,7 +49,7 @@ data class Setup(
     val lang: String = "uk",
     val introSpeechSeconds: Int = 30,
     val daySpeechSeconds: Int = 60,
-) {
+) : java.io.Serializable {
     /** Классическая треть стола — то, что приложение предлагает по умолчанию. */
     val autoMafia: Int get() = Math.round(playerCount / 3f).toInt().coerceAtLeast(1)
 
