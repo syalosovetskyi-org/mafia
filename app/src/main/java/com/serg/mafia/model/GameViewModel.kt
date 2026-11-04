@@ -14,9 +14,11 @@ class GameViewModel(
     private val savedStateHandle: SavedStateHandle? = null,
 ) : ViewModel() {
 
-    var s by mutableStateOf(savedStateHandle?.get<GameState>(KEY_STATE) ?: GameState())
+    private val _s = mutableStateOf(savedStateHandle?.get<GameState>(KEY_STATE) ?: GameState())
+    var s: GameState
+        get() = _s.value
         private set(value) {
-            field = value
+            _s.value = value
             savedStateHandle?.set(KEY_STATE, value)
         }
 

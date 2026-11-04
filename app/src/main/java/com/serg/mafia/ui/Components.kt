@@ -56,7 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.Role as SemanticsRole
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -197,7 +197,7 @@ fun PlayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button) { onClick() } else Modifier),
+            .then(if (onClick != null) Modifier.clickable(role = SemanticsRole.Button) { onClick() } else Modifier),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) Blood.copy(alpha = 0.22f) else Surface1,
@@ -404,7 +404,7 @@ fun MiniPlayer() {
                 maxLines = 1,
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(role = Role.Button) { showVolume = !showVolume },
+                    .clickable(role = SemanticsRole.Button) { showVolume = !showVolume },
                 textAlign = TextAlign.Center,
             )
             IconButton(onClick = { music.toggle() }, enabled = music.enabled) {

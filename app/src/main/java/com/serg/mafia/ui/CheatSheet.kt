@@ -162,6 +162,7 @@ fun MusicSettingsDialog(onDismiss: () -> Unit) {
                     Spacer(Modifier.height(8.dp))
                     Text(t("music_lib_empty"), color = Muted, fontSize = 12.sp)
                 } else {
+                    val removeDesc = t("remove")
                     LazyColumn(Modifier.heightIn(max = 220.dp)) {
                         items(music.library, key = { it.uri }) { item ->
                             Row(
@@ -180,7 +181,7 @@ fun MusicSettingsDialog(onDismiss: () -> Unit) {
                                 )
                                 TextButton(
                                     onClick = { music.removeFromLibrary(item) },
-                                    modifier = Modifier.semantics { contentDescription = t("remove") },
+                                    modifier = Modifier.semantics { contentDescription = removeDesc },
                                 ) {
                                     Text("×", color = Blood, fontSize = 18.sp)
                                 }
