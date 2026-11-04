@@ -1,5 +1,6 @@
 package com.serg.mafia
 
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.view.WindowManager
@@ -25,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.serg.mafia.audio.MusicController
 import com.serg.mafia.audio.Sfx
@@ -110,6 +113,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+object SecurityUtils {
+    val SECURE_PHASES = setOf(Phase.DEAL, Phase.INTRO_NIGHT, Phase.NIGHT)
+    fun isSecureScreen(phase: Phase, cheatOpen: Boolean): Boolean =
+        phase in SECURE_PHASES || cheatOpen
+}
+
 @Composable
 private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
     val music = LocalMusic.current
@@ -118,6 +127,21 @@ private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
     var musicOpen by remember { mutableStateOf(false) }
     var exitOpen by remember { mutableStateOf(false) }
     var lastSfxKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Защита от скриншотов и превью в Недавних на экранах с тайными ролями (В16)
+    val context = LocalContext.current
+    val window = (context as? Activity)?.window
+    val requiresSecure = SecurityUtils.isSecureScreen(s.phase, cheatOpen)
+    DisposableEffect(requiresSecure) {
+        if (requiresSecure) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
 
     // Обработка кнопки Назад: возврат на шаг назад в фазах или подтверждение выхода из партии
     BackHandler(enabled = s.phase != Phase.SETUP || cheatOpen || musicOpen || exitOpen) {
