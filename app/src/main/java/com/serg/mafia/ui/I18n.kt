@@ -152,7 +152,7 @@ private val UK = mapOf(
     "round_done" to "Коло завершено",
     "all_spoke" to "Усі висловились",
     "to_vote" to "До голосування",
-    "to_night" to До_NIGHT,
+    "to_night" to "До ночі",
     // фолы
     "fouls_title" to "Фоли",
     "fouls_rule" to "1 — попередження · 2 — пропуск промови · 3 — смерть",
@@ -199,7 +199,7 @@ private val UK = mapOf(
     "who_to_add" to "Кого додати до голосування?",
     // финал
     "game_over" to "Партію завершено",
-    "win_red" to "Переміг мiсто",
+    "win_red" to "Перемогло місто",
     "win_black" to "Перемогла мафія",
     "win_maniac" to "Переміг маніяк",
     "survived" to "вижив",
@@ -284,8 +284,6 @@ private val UK = mapOf(
     "death_fouls" to "3 фоли",
     "death_vote" to "голосування",
 )
-
-private const val До_NIGHT = "До ночі"
 
 private val RU = mapOf(
     "music_library" to "Библиотека треков",
