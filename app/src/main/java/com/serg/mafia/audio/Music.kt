@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.serg.mafia.R
+import com.serg.mafia.crash.CrashReporter
 
 /** Фоновая дорожка под фазу партии. */
 enum class Track(val titleKey: String, val resId: Int, val prefKey: String) {
@@ -94,7 +95,7 @@ class MusicController(context: Context) {
                 val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
             }
-        }.getOrNull()
+        }.onFailure { CrashReporter.recordException(it) }.getOrNull()
         return (fromResolver ?: uri.lastPathSegment ?: "track").substringAfterLast('/')
     }
 
@@ -104,7 +105,7 @@ class MusicController(context: Context) {
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
-        }
+        }.onFailure { CrashReporter.recordException(it) }
     }
 
     /** Добавить отдельные файлы, выбранные системным диалогом. */
@@ -120,7 +121,9 @@ class MusicController(context: Context) {
     /** Добавить всю папку разом: из неё забираются аудиофайлы. */
     fun addFolder(treeUri: Uri) {
         persist(treeUri)
-        val docId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull() ?: return
+        val docId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }
+            .onFailure { CrashReporter.recordException(it) }
+            .getOrNull() ?: return
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
         runCatching {
             app.contentResolver.query(
@@ -145,7 +148,7 @@ class MusicController(context: Context) {
                     if (library.none { it.uri == uri }) library += LibraryTrack(uri, name)
                 }
             }
-        }
+        }.onFailure { CrashReporter.recordException(it) }
         saveLibrary()
     }
 
@@ -172,7 +175,7 @@ class MusicController(context: Context) {
 
     fun mode(track: Track): PhaseMode = runCatching {
         PhaseMode.valueOf(prefs.getString("mode_${track.prefKey}", null) ?: defaultMode(track).name)
-    }.getOrDefault(defaultMode(track))
+    }.onFailure { CrashReporter.recordException(it) }.getOrDefault(defaultMode(track))
 
     fun setMode(track: Track, mode: PhaseMode) {
         prefs.edit().putString("mode_${track.prefKey}", mode.name).apply()
@@ -240,7 +243,7 @@ class MusicController(context: Context) {
                     isLooping = chosen.size == 1
                     prepare()
                 }
-            }.getOrNull()
+            }.onFailure { CrashReporter.recordException(it) }.getOrNull()
         } ?: run {
             // Битый или отозванный URI — не роняем партию, откатываемся на встроенный.
             currentTitle = builtinTitle(track)

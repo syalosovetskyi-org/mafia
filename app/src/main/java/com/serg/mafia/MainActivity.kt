@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.serg.mafia.audio.MusicController
 import com.serg.mafia.audio.Sfx
 import com.serg.mafia.audio.Track
+import com.serg.mafia.crash.CrashReporter
 import com.serg.mafia.model.GameViewModel
 import com.serg.mafia.model.Phase
 import com.serg.mafia.ui.CheatSheetDialog
@@ -73,6 +74,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CrashReporter.init(this)
         enableEdgeToEdge()
         // Партия идёт с телефоном в руках у ведущего — гасить экран нельзя.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
