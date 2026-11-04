@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -117,6 +118,19 @@ private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
     var musicOpen by remember { mutableStateOf(false) }
     var exitOpen by remember { mutableStateOf(false) }
     var lastSfxKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Обработка кнопки Назад: возврат на шаг назад в фазах или подтверждение выхода из партии
+    BackHandler(enabled = s.phase != Phase.SETUP || cheatOpen || musicOpen || exitOpen) {
+        when {
+            cheatOpen -> cheatOpen = false
+            musicOpen -> musicOpen = false
+            exitOpen -> exitOpen = false
+            s.phase == Phase.DEAL && s.dealIndex > 0 -> vm.dealBack()
+            s.phase == Phase.INTRO_NIGHT && s.introStepIndex > 0 -> vm.introBack()
+            s.phase == Phase.NIGHT && s.nightStepIndex > 0 -> vm.nightBack()
+            s.phase != Phase.SETUP -> exitOpen = true
+        }
+    }
 
     // Музыка и сигналы едут за фазой партии.
     LaunchedEffect(s.phase, s.nightNumber, s.dayNumber) {
