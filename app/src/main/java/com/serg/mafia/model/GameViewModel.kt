@@ -337,7 +337,10 @@ class GameViewModel : ViewModel() {
             log = s.log + lines,
         )
         if (fouls >= 3) {
-            st = st.copy(nominationsBy = st.nominationsBy.filterValues { it != playerId } - playerId)
+            st = st.copy(
+                nominationsBy = st.nominationsBy.filterValues { it != playerId } - playerId,
+                votes = st.votes - playerId,
+            )
             if (st.speakerId == playerId) {
                 st = nextSpeakerState(st.copy(spokenIds = st.spokenIds + playerId))
                 if (st.speakerId == null) {
@@ -371,9 +374,10 @@ class GameViewModel : ViewModel() {
 
     val voteLeaders: List<Int>
         get() {
-            val max = s.votes.values.maxOrNull() ?: return emptyList()
+            val aliveVotes = s.votes.filterKeys { s.player(it).alive }
+            val max = aliveVotes.values.maxOrNull() ?: return emptyList()
             if (max <= 0) return emptyList()
-            return s.votes.filterValues { it == max }.keys.toList()
+            return aliveVotes.filterValues { it == max }.keys.toList()
         }
 
     fun eliminate(playerId: Int) {
