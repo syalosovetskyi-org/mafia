@@ -5,10 +5,14 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -65,6 +69,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         // Партия идёт с телефоном в руках у ведущего — гасить экран нельзя.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         music = MusicController(this)
@@ -157,7 +162,12 @@ private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
         }
 
         // Быстрый доступ ведущего: шпаргалка с ролями и настройки музыки.
-        Box(Modifier.align(Alignment.TopEnd).padding(top = 24.dp, end = 4.dp)) {
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(top = 4.dp, end = 4.dp),
+        ) {
             androidx.compose.foundation.layout.Row {
                 if (s.phase != Phase.SETUP) {
                     IconButton(onClick = { exitOpen = true }) {
