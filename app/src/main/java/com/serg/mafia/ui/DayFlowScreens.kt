@@ -231,7 +231,7 @@ fun GameOverScreen(vm: GameViewModel) {
             Column {
                 BigButton(t("new_game_same")) { vm.newGameSameTable() }
                 Spacer(Modifier.height(8.dp))
-                GhostButton(t("change_setup"), Modifier.fillMaxWidth()) { vm.reset() }
+                GhostButton(t("change_setup"), Modifier.fillMaxWidth()) { vm.backToSetup() }
             }
         },
     ) {
