@@ -1,5 +1,6 @@
 package com.serg.mafia
 
+import com.serg.mafia.model.CountdownTimer
 import com.serg.mafia.model.Faction
 import com.serg.mafia.model.GameViewModel
 import com.serg.mafia.model.Phase
@@ -332,5 +333,216 @@ class GameLogicTest {
             if (vm.s.phase == Phase.DAY) vm.finishSpeechRound()
         }
         assertEquals(Faction.BLACK, vm.s.winner)
+    }
+
+    @Test
+    fun `третий фол последнему говорящему переводит фазу и не софтлочит игру`() {
+        val vm = game(players = 6, doctor = false, sheriff = false)
+        vm.finishDeal(); vm.finishIntro()
+        // В INTRO_DAY доходим до последнего говорящего
+        while (vm.s.speechQueue().size > 1) {
+            vm.finishSpeech()
+        }
+        val lastSpeaker = vm.s.speakerId!!
+        assertEquals(1, vm.s.speechQueue().size)
+        // Выдаём 3 фола последнему спикеру
+        vm.addFoul(lastSpeaker)
+        vm.addFoul(lastSpeaker)
+        vm.addFoul(lastSpeaker)
+        // Игрок должен выбыть, а фаза должна автоматически смениться на NIGHT (для intro_day)
+        assertFalse(vm.s.player(lastSpeaker).alive)
+        assertEquals(Phase.NIGHT, vm.s.phase)
+    }
+
+    @Test
+    fun `третий фол последнему говорящему в день с выставлениями переводит в голосование`() {
+        val vm = game(players = 6, doctor = false, sheriff = false)
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        // Ночь без жертв
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+        val firstSpeaker = vm.s.speakerId!!
+        val nominee = vm.s.alivePlayers.first { it.id != firstSpeaker }
+        vm.nominate(firstSpeaker, nominee.id)
+        // Доходим до последнего говорящего
+        while (vm.s.speechQueue().size > 1) {
+            vm.finishSpeech()
+        }
+        val lastSpeaker = vm.s.speakerId!!
+        vm.addFoul(lastSpeaker); vm.addFoul(lastSpeaker); vm.addFoul(lastSpeaker)
+        assertFalse(vm.s.player(lastSpeaker).alive)
+        // Круг закрыт, есть выставленные -> должен начаться VOTE
+        assertEquals(Phase.VOTE, vm.s.phase)
+    }
+
+    @Test
+    fun `третий фол кандидату во время голосования убирает его из голосов и лидеров`() {
+        val vm = game(players = 6, doctor = false, sheriff = false)
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+        val c1 = vm.s.alivePlayers[0].id
+        val c2 = vm.s.alivePlayers[1].id
+        vm.nominate(c1, c1)
+        vm.nominate(c2, c2)
+        vm.finishSpeechRound()
+        assertEquals(Phase.VOTE, vm.s.phase)
+        vm.setVote(c1, 4)
+        vm.setVote(c2, 2)
+        assertEquals(listOf(c1), vm.voteLeaders)
+        // Кандидат c1 получает 3 фола
+        vm.addFoul(c1); vm.addFoul(c1); vm.addFoul(c1)
+        assertFalse(vm.s.player(c1).alive)
+        // c1 должен быть удалён из votes и не быть лидером голосования
+        assertFalse(vm.s.votes.containsKey(c1))
+        assertEquals(listOf(c2), vm.voteLeaders)
+    }
+
+    @Test
+    fun `одновременная гибель всех игроков не объявляет победу города`() {
+        val vm = game(players = 4, doctor = false, sheriff = false, maniac = true)
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        val black = vm.s.players.first { it.role.isBlack }.id
+        val maniac = vm.s.players.first { it.role == Role.MANIAC }.id
+        val reds = vm.s.players.filter { !it.role.isBlack && it.role != Role.MANIAC }
+        // Устраняем всех мирных через фолы
+        reds.forEach {
+            vm.addFoul(it.id); vm.addFoul(it.id); vm.addFoul(it.id)
+        }
+        // Мафия и маньяк стреляют друг в друга
+        vm.chooseNightTarget(Role.MAFIA, maniac)
+        vm.chooseNightTarget(Role.MANIAC, black)
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        assertEquals(0, vm.s.alivePlayers.size)
+        assertNull("Город не может победить, когда все мирные мертвы", vm.s.winner)
+        assertEquals(Phase.GAME_OVER, vm.s.phase)
+    }
+
+    @Test
+    fun `один на один мафия и маньяк не завершают игру победой мафии`() {
+        val vm = game(players = 4, doctor = false, sheriff = false, maniac = true)
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        val reds = vm.s.players.filter { !it.role.isBlack && it.role != Role.MANIAC }
+        reds.forEach {
+            vm.addFoul(it.id); vm.addFoul(it.id); vm.addFoul(it.id)
+        }
+        assertEquals(2, vm.s.alivePlayers.size)
+        assertNull("При 1 мафии и 1 маньяке мафия не имеет большинства", vm.s.winner)
+    }
+
+    @Test
+    fun `таймер речи стартует, тикает и корректно останавливается`() {
+        var fakeTime = 1000L
+        var finished = false
+        val timer = CountdownTimer(
+            totalSeconds = 30,
+            clock = { fakeTime },
+            onFinished = { finished = true },
+        )
+        assertEquals(30, timer.remainingSeconds)
+        assertFalse(timer.isRunning)
+
+        timer.start()
+        assertTrue(timer.isRunning)
+
+        // Прошло 500мс — тика ещё нет
+        fakeTime += 500
+        assertFalse(timer.tick())
+        assertEquals(30, timer.remainingSeconds)
+
+        // Прошла 1 секунда
+        fakeTime += 500
+        assertTrue(timer.tick())
+        assertEquals(29, timer.remainingSeconds)
+
+        // Прошло сразу 10 секунд
+        fakeTime += 10000
+        assertTrue(timer.tick())
+        assertEquals(19, timer.remainingSeconds)
+
+        // Пауза
+        timer.pause()
+        assertFalse(timer.isRunning)
+        fakeTime += 5000
+        assertFalse(timer.tick())
+        assertEquals(19, timer.remainingSeconds)
+
+        // Доматываем до конца
+        timer.start()
+        fakeTime += 20000
+        assertTrue(timer.tick())
+        assertEquals(0, timer.remainingSeconds)
+        assertFalse(timer.isRunning)
+        assertTrue(timer.isFinished)
+        assertTrue(finished)
+
+        // Сброс
+        timer.reset()
+        assertEquals(30, timer.remainingSeconds)
+        assertFalse(timer.isRunning)
+        assertFalse(timer.isFinished)
+    }
+
+    @Test
+    fun `партия на 4 игрока с минимальным составом валидна`() {
+        val setup = Setup(
+            playerCount = 4,
+            withDoctor = false,
+            withSheriff = false,
+            withButterfly = false,
+            withManiac = false,
+            withDon = false,
+        )
+        assertTrue(setup.isValid)
+        assertEquals(1, setup.mafiaTotal)
+        assertEquals(3, setup.roleCounts[Role.CIVILIAN])
+    }
+
+    @Test
+    fun `партия на 20 игроков с максимальным составом валидна`() {
+        val setup = Setup(
+            playerCount = 20,
+            withDoctor = true,
+            withSheriff = true,
+            withButterfly = true,
+            withManiac = true,
+            withDon = true,
+        )
+        assertTrue(setup.isValid)
+        assertEquals(7, setup.mafiaTotal)
+        assertEquals(1, setup.roleCounts[Role.DON])
+        assertEquals(6, setup.roleCounts[Role.MAFIA])
+        assertEquals(1, setup.roleCounts[Role.DOCTOR])
+        assertEquals(1, setup.roleCounts[Role.SHERIFF])
+        assertEquals(1, setup.roleCounts[Role.BUTTERFLY])
+        assertEquals(1, setup.roleCounts[Role.MANIAC])
+        assertEquals(9, setup.roleCounts[Role.CIVILIAN])
+    }
+
+    @Test
+    fun `партия без спецролей корректно формирует шаги ночи`() {
+        val vm = game(players = 6, doctor = false, sheriff = false, butterfly = false, maniac = false)
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        assertEquals(listOf(Role.MAFIA), vm.s.nightSteps.map { it.role })
+    }
+
+    @Test
+    fun `ничья на голосовании отображает нескольких лидеров`() {
+        val vm = game(players = 6, doctor = false, sheriff = false)
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+        val c1 = vm.s.alivePlayers[0].id
+        val c2 = vm.s.alivePlayers[1].id
+        vm.nominate(c1, c1)
+        vm.nominate(c2, c2)
+        vm.finishSpeechRound()
+        vm.setVote(c1, 2)
+        vm.setVote(c2, 2)
+        assertEquals(2, vm.voteLeaders.size)
+        assertTrue(vm.voteLeaders.contains(c1))
+        assertTrue(vm.voteLeaders.contains(c2))
+        vm.skipVote()
+        assertEquals(Phase.NIGHT, vm.s.phase)
     }
 }
