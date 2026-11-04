@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -195,7 +197,7 @@ fun PlayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button) { onClick() } else Modifier),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) Blood.copy(alpha = 0.22f) else Surface1,
@@ -205,7 +207,8 @@ fun PlayerRow(
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .defaultMinSize(minHeight = 48.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -390,7 +393,7 @@ fun MiniPlayer() {
             IconButton(onClick = { music.enableMusic(!music.enabled) }) {
                 Icon(
                     if (music.enabled) Icons.Filled.MusicNote else Icons.Filled.MusicOff,
-                    contentDescription = t("music"),
+                    contentDescription = if (music.enabled) t("music_off") else t("music"),
                     tint = if (music.enabled) Gold else Muted,
                 )
             }
@@ -401,13 +404,13 @@ fun MiniPlayer() {
                 maxLines = 1,
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { showVolume = !showVolume },
+                    .clickable(role = Role.Button) { showVolume = !showVolume },
                 textAlign = TextAlign.Center,
             )
             IconButton(onClick = { music.toggle() }, enabled = music.enabled) {
                 Icon(
                     if (music.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = t("pause"),
+                    contentDescription = if (music.isPlaying) t("pause") else t("start"),
                     tint = if (music.enabled) Moon else Muted,
                 )
             }

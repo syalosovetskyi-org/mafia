@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -26,6 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -124,10 +128,11 @@ fun MusicSettingsDialog(onDismiss: () -> Unit) {
                     Row(
                         Modifier
                             .fillMaxWidth()
+                            .defaultMinSize(minHeight = 48.dp)
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(Surface2)
-                            .clickable { phasePicker = track }
+                            .clickable(role = Role.Button) { phasePicker = track }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -173,7 +178,10 @@ fun MusicSettingsDialog(onDismiss: () -> Unit) {
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f),
                                 )
-                                TextButton(onClick = { music.removeFromLibrary(item) }) {
+                                TextButton(
+                                    onClick = { music.removeFromLibrary(item) },
+                                    modifier = Modifier.semantics { contentDescription = t("remove") },
+                                ) {
                                     Text("×", color = Blood, fontSize = 18.sp)
                                 }
                             }
@@ -242,10 +250,11 @@ private fun ModeRow(label: String, active: Boolean, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
             .padding(vertical = 3.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (active) Gold.copy(alpha = 0.18f) else Surface2)
-            .clickable(onClick = onClick)
+            .clickable(role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

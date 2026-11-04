@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -32,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role as SemanticsRole
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,7 +55,7 @@ fun SetupScreen(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                 setup.validationKey?.let { (key, args) ->
                     Text(
                         t(key, *args.toTypedArray()),
-                        color = Blood,
+                        color = ErrorRed,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(bottom = 6.dp),
                     )
@@ -161,7 +164,7 @@ fun SetupScreen(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                     Spacer(Modifier.height(6.dp))
                     Text(
                         t("roles_total", setup.assignedTotal, setup.playerCount),
-                        color = if (setup.isValid) Muted else Blood,
+                        color = if (setup.isValid) Muted else ErrorRed,
                         fontSize = 13.sp,
                     )
                 }
@@ -188,9 +191,10 @@ fun SetupScreen(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
                                 modifier = Modifier
                                     .weight(1f)
+                                    .defaultMinSize(minHeight = 48.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(if (active) Gold else Surface2)
-                                    .clickable { onLangChange(lang) }
+                                    .clickable(role = SemanticsRole.Button) { onLangChange(lang) }
                                     .padding(vertical = 12.dp),
                                 textAlign = TextAlign.Center,
                             )
@@ -263,10 +267,10 @@ private fun Stepper(value: Int, min: Int, max: Int, onChange: (Int) -> Unit) {
 private fun StepBtn(label: String, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(44.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Surface2)
-            .clickable(onClick = onClick),
+            .clickable(role = SemanticsRole.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontSize = 24.sp, color = Gold, fontWeight = FontWeight.Bold)
@@ -278,7 +282,13 @@ private fun RoleToggle(title: String, hint: String, checked: Boolean, onChange: 
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp),
+            .defaultMinSize(minHeight = 48.dp)
+            .toggleable(
+                value = checked,
+                role = SemanticsRole.Switch,
+                onValueChange = onChange,
+            )
+            .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -287,7 +297,7 @@ private fun RoleToggle(title: String, hint: String, checked: Boolean, onChange: 
         }
         Switch(
             checked = checked,
-            onCheckedChange = onChange,
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Gold,
                 checkedTrackColor = Gold.copy(alpha = 0.35f),

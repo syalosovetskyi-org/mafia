@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -211,11 +212,11 @@ private fun VoteStep(label: String, onClick: () -> Unit) {
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
         modifier = Modifier
-            .size(42.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Surface2)
-            .clickable(onClick = onClick)
-            .padding(top = 6.dp),
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(top = 8.dp),
     )
 }
 

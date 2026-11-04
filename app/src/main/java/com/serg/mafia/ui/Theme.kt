@@ -17,6 +17,7 @@ val Ink = Color(0xFF0E0B10)
 val Surface1 = Color(0xFF17131C)
 val Surface2 = Color(0xFF221C29)
 val Blood = Color(0xFFC2413C)
+val ErrorRed = Color(0xFFEA6B66) // Контраст ≥4.5:1 (5.37:1 на Surface2, 5.92:1 на Surface1, 6.32:1 на Ink)
 val Gold = Color(0xFFD8A55B)
 val Moon = Color(0xFF8FA6C9)
 val RedTeam = Color(0xFFD05A55)
@@ -36,7 +37,7 @@ private val scheme = darkColorScheme(
     onSurface = Color(0xFFEDE7F2),
     surfaceVariant = Surface2,
     onSurfaceVariant = Muted,
-    error = Blood,
+    error = ErrorRed,
 )
 
 private val typography = Typography(
