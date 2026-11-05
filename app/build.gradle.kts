@@ -45,6 +45,9 @@ android {
     productFlavors {
         create("personal") {
             dimension = "distribution"
+            // Решение Сержа 05.11.2026 (#2673): личная сборка — отдельный пакет,
+            // ставится рядом с версией из Google Play, а не поверх неё.
+            applicationId = "com.serg.mafia.personal"
         }
         create("play") {
             dimension = "distribution"
