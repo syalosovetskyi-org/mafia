@@ -26,6 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +40,7 @@ fun DealScreen(vm: GameViewModel) {
     val player = s.players.getOrNull(s.dealIndex) ?: return
     var held by remember(s.dealIndex) { mutableStateOf(false) }
     var seen by rememberSaveable(s.dealIndex) { mutableStateOf(false) }
+    val showRoleLabel = t("show_role")
 
     Screen(
         title = t("deal_title"),
@@ -73,6 +77,14 @@ fun DealScreen(vm: GameViewModel) {
                                 held = false
                             },
                         )
+                    }
+                    .semantics {
+                        customActions = listOf(
+                            CustomAccessibilityAction(showRoleLabel) {
+                                seen = true
+                                true
+                            }
+                        )
                     },
                 contentAlignment = Alignment.Center,
             ) {
@@ -97,7 +109,8 @@ fun DealScreen(vm: GameViewModel) {
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 t("release_hides"),
-                                color = Muted.copy(alpha = 0.6f),
+                                // Fix 24: removed alpha=0.6 for sufficient contrast
+                                color = Muted,
                                 fontSize = 13.sp,
                             )
                         }

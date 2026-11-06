@@ -32,11 +32,27 @@ class I18nTest {
     }
 
     @Test
-    fun `украинский — язык по умолчанию`() {
-        assertEquals(Lang.UK, Lang.of(null))
-        assertEquals(Lang.UK, Lang.of("xx"))
+    fun `язык по умолчанию определяется локалью устройства`() {
+        val orig = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale("uk"))
+            assertEquals(Lang.UK, Lang.of(null))
+            assertEquals(Lang.UK, Lang.of("xx"))
+            java.util.Locale.setDefault(java.util.Locale("ru"))
+            assertEquals(Lang.RU, Lang.of(null))
+            assertEquals(Lang.RU, Lang.of("xx"))
+            java.util.Locale.setDefault(java.util.Locale("en"))
+            assertEquals(Lang.EN, Lang.of(null))
+            assertEquals(Lang.EN, Lang.of("xx"))
+            java.util.Locale.setDefault(java.util.Locale("de"))
+            assertEquals(Lang.EN, Lang.of(null))
+            assertEquals(Lang.EN, Lang.of("xx"))
+        } finally {
+            java.util.Locale.setDefault(orig)
+        }
         assertEquals(Lang.RU, Lang.of("ru"))
         assertEquals(Lang.EN, Lang.of("en"))
+        assertEquals(Lang.UK, Lang.of("uk"))
     }
 
     @Test

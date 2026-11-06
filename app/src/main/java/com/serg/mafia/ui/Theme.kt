@@ -21,6 +21,8 @@ val ErrorRed = Color(0xFFEA6B66) // Контраст ≥4.5:1 (5.37:1 на Surfa
 val Gold = Color(0xFFD8A55B)
 val Moon = Color(0xFF8FA6C9)
 val RedTeam = Color(0xFFD05A55)
+// Освітлений варіант RedTeam для тексту на RedTeam@0.14 фоні — контраст ≥4.5:1
+val RedTeamLight = Color(0xFFE87A76)
 const val BLACK_TEAM_HEX = 0xFF9B8CC4
 val BlackTeam = Color(BLACK_TEAM_HEX)
 val ManiacTeam = Color(0xFF5FBF8C)
@@ -29,14 +31,27 @@ val Muted = Color(0xFF9A93A6)
 private val scheme = darkColorScheme(
     primary = Blood,
     onPrimary = Color.White,
+    primaryContainer = Color(0xFF5C1A18),
+    onPrimaryContainer = Color(0xFFFFDAD6),
     secondary = Gold,
     onSecondary = Ink,
+    secondaryContainer = Color(0xFF4A3610),
+    onSecondaryContainer = Color(0xFFFFDDB0),
+    tertiary = Moon,
+    onTertiary = Ink,
     background = Ink,
     onBackground = Color(0xFFEDE7F2),
     surface = Surface1,
     onSurface = Color(0xFFEDE7F2),
     surfaceVariant = Surface2,
     onSurfaceVariant = Muted,
+    surfaceContainerLowest = Ink,
+    surfaceContainerLow = Ink,
+    surfaceContainer = Surface1,
+    surfaceContainerHigh = Surface2,
+    surfaceContainerHighest = Color(0xFF2E2738),
+    outline = Color(0xFF7A7385),
+    outlineVariant = Color(0xFF4A4452),
     error = ErrorRed,
 )
 

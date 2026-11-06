@@ -15,11 +15,21 @@ enum class Lang(val code: String, val label: String) {
     ;
 
     companion object {
-        fun of(code: String?): Lang = entries.firstOrNull { it.code == code } ?: UK
+        fun defaultLang(): Lang {
+            val tag = java.util.Locale.getDefault().language
+            return when (tag) {
+                "uk" -> UK
+                "ru" -> RU
+                "en" -> EN
+                else -> EN
+            }
+        }
+
+        fun of(code: String?): Lang = entries.firstOrNull { it.code == code } ?: defaultLang()
     }
 }
 
-val LocalLang = staticCompositionLocalOf { Lang.UK }
+val LocalLang = staticCompositionLocalOf { Lang.defaultLang() }
 
 /** Строка по ключу на текущем языке. Подстановки — обычный String.format («%s», «%d»). */
 @Composable
@@ -134,7 +144,7 @@ private val UK = mapOf(
     "speeches_left" to "Залишилось промов: %d",
     "speech_done" to "Промову завершено",
     "nominate" to "Виставити",
-    "who_nominated_short" to "хто кого",
+    "who_nominated_short" to "Хто кого виставив",
     "foul_plus" to "+ фол",
     "foul_minus" to "− фол",
     "no_fouls" to "без фолів",
@@ -191,8 +201,8 @@ private val UK = mapOf(
     "vote_sub" to "День %d · живих %d",
     "put_votes" to "Постав голоси проти кандидатів",
     "tie" to "Нічия: ",
-    "tie_hint" to " — переголосуйте або оберіть вручну натисканням на картку",
-    "expel" to "Вигнати %s",
+    "tie_hint" to " — переголосуйте або натисніть «Вигнати» для потрібного гравця",
+    "expel" to "Вигнати: %s",
     "add_player" to "Додати гравця",
     "nobody_out" to "Ніхто не вибуває",
     "added_by_host" to "додав ведучий",
@@ -217,6 +227,27 @@ private val UK = mapOf(
     "exit_yes" to "Перервати партію",
     "exit_no" to "Граємо далі",
     // музыка
+    "music_toggle_on" to "Увімкнути музику",
+    "music_toggle_off" to "Вимкнути музику",
+    "play_music" to "Грати музику",
+    "next_track" to "Наступний трек",
+    // підтвердження «ніхто не вибуває»
+    "nobody_out_confirm_title" to "Завершити без вибування?",
+    "nobody_out_confirm_body" to "Голосування закінчиться, ніхто не вийде зі столу. Це незворотно.",
+    // підтвердження 3-го фолу
+    "foul3_confirm_title" to "Третій фол — вибування",
+    "foul3_confirm_body" to "Гравець %s вибуває. Підтвердити?",
+    "foul3_confirm_yes" to "Вибуває",
+    // голосування — кнопки ± голосів
+    "vote_minus" to "Менше голосів: %s",
+    "vote_plus" to "Більше голосів: %s",
+    // налаштування — крок гравців/часу
+    "players_less" to "Гравців: менше",
+    "players_more" to "Гравців: більше",
+    "time_less" to "Менше часу",
+    "time_more" to "Більше часу",
+    // розподіл ролей
+    "show_role" to "Показати роль",
     // фракции
     "faction_red" to "червоний",
     "faction_black" to "чорний",
@@ -376,7 +407,7 @@ private val RU = mapOf(
     "speeches_left" to "Осталось речей: %d",
     "speech_done" to "Речь окончена",
     "nominate" to "Выставить",
-    "who_nominated_short" to "кто кого",
+    "who_nominated_short" to "Кто кого выставил",
     "foul_plus" to "+ фол",
     "foul_minus" to "− фол",
     "no_fouls" to "нет фолов",
@@ -429,8 +460,8 @@ private val RU = mapOf(
     "vote_sub" to "День %d · живых %d",
     "put_votes" to "Проставь голоса против кандидатов",
     "tie" to "Ничья: ",
-    "tie_hint" to " — переголосуйте или выберите вручную нажатием на карточку",
-    "expel" to "Выгнать %s",
+    "tie_hint" to " — переголосуйте или нажмите «Выгнать» для нужного игрока",
+    "expel" to "Выгнать: %s",
     "add_player" to "Добавить игрока",
     "nobody_out" to "Никто не выбывает",
     "added_by_host" to "добавлен ведущим",
@@ -514,6 +545,28 @@ private val RU = mapOf(
     "death_night" to "убит ночью",
     "death_fouls" to "3 фола",
     "death_vote" to "голосование",
+    // музыка
+    "music_toggle_on" to "Включить музыку",
+    "music_toggle_off" to "Выключить музыку",
+    "play_music" to "Играть музыку",
+    "next_track" to "Следующий трек",
+    // подтверждение «никто не выбывает»
+    "nobody_out_confirm_title" to "Завершить без выбывания?",
+    "nobody_out_confirm_body" to "Голосование закончится, никто не покинет стол. Это необратимо.",
+    // подтверждение 3-го фола
+    "foul3_confirm_title" to "Третий фол — выбывание",
+    "foul3_confirm_body" to "Игрок %s выбывает. Подтвердить?",
+    "foul3_confirm_yes" to "Выбывает",
+    // голосование — кнопки ± голосов
+    "vote_minus" to "Меньше голосов: %s",
+    "vote_plus" to "Больше голосов: %s",
+    // настройка — шаг игроков/времени
+    "players_less" to "Игроков: меньше",
+    "players_more" to "Игроков: больше",
+    "time_less" to "Меньше времени",
+    "time_more" to "Больше времени",
+    // раздача ролей
+    "show_role" to "Показать роль",
 )
 
 private val EN = mapOf(
@@ -607,7 +660,7 @@ private val EN = mapOf(
     "speeches_left" to "Speeches left: %d",
     "speech_done" to "Speech finished",
     "nominate" to "Nominate",
-    "who_nominated_short" to "who whom",
+    "who_nominated_short" to "Who nominated whom",
     "foul_plus" to "+ foul",
     "foul_minus" to "− foul",
     "no_fouls" to "no fouls",
@@ -660,8 +713,8 @@ private val EN = mapOf(
     "vote_sub" to "Day %d · alive %d",
     "put_votes" to "Set the votes against the candidates",
     "tie" to "Tie: ",
-    "tie_hint" to " — revote or pick manually by tapping a card",
-    "expel" to "Vote out %s",
+    "tie_hint" to " — revote or press «Vote out» for the player you want to remove",
+    "expel" to "Vote out: %s",
     "add_player" to "Add a player",
     "nobody_out" to "Nobody leaves",
     "added_by_host" to "added by the host",
@@ -745,6 +798,28 @@ private val EN = mapOf(
     "death_night" to "killed at night",
     "death_fouls" to "3 fouls",
     "death_vote" to "vote",
+    // music
+    "music_toggle_on" to "Enable music",
+    "music_toggle_off" to "Disable music",
+    "play_music" to "Play music",
+    "next_track" to "Next track",
+    // confirm nobody-out
+    "nobody_out_confirm_title" to "End vote with no result?",
+    "nobody_out_confirm_body" to "The vote will end and nobody leaves. This cannot be undone.",
+    // confirm 3rd foul
+    "foul3_confirm_title" to "Third foul — out",
+    "foul3_confirm_body" to "Player %s is out. Confirm?",
+    "foul3_confirm_yes" to "Out",
+    // vote ± buttons
+    "vote_minus" to "Fewer votes: %s",
+    "vote_plus" to "More votes: %s",
+    // setup — player/time step
+    "players_less" to "Players: fewer",
+    "players_more" to "Players: more",
+    "time_less" to "Less time",
+    "time_more" to "More time",
+    // deal screen
+    "show_role" to "Show role",
 )
 
 val STRINGS: Map<Lang, Map<String, String>> = mapOf(Lang.UK to UK, Lang.RU to RU, Lang.EN to EN)

@@ -46,7 +46,7 @@ data class Setup(
     val mafiaOverride: Int? = null,
     /** Первая ночь заранее назначена промахом: мафия стреляет в воздух, красным легче. */
     val firstNightMiss: Boolean = false,
-    val lang: String = "uk",
+    val lang: String = defaultLang(),
     val introSpeechSeconds: Int = 30,
     val daySpeechSeconds: Int = 60,
 ) : java.io.Serializable {
@@ -132,3 +132,14 @@ data class Setup(
 /** Имена по умолчанию задаёт UI на языке интерфейса; здесь — запасной вариант. */
 fun defaultNames(n: Int, pattern: String = "Player %d"): List<String> =
     (1..n).map { String.format(pattern, it) }
+
+/** Обнаружение языка системы для установки умолчания интерфейса. */
+private fun defaultLang(): String {
+    val tag = java.util.Locale.getDefault().language
+    return when (tag) {
+        "uk" -> "uk"
+        "ru" -> "ru"
+        "en" -> "en"
+        else -> "en"
+    }
+}

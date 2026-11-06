@@ -16,7 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -183,13 +187,13 @@ fun MusicSettingsDialog(onDismiss: () -> Unit) {
                                     onClick = { music.removeFromLibrary(item) },
                                     modifier = Modifier.semantics { contentDescription = removeDesc },
                                 ) {
-                                    Text("×", color = Blood, fontSize = 18.sp)
+                                    Icon(Icons.Filled.Close, contentDescription = null, tint = ErrorRed)
                                 }
                             }
                         }
                     }
                     TextButton(onClick = { music.clearLibrary() }) {
-                        Text(t("clear_library"), color = Blood, fontSize = 13.sp)
+                        Text(t("clear_library"), color = ErrorRed, fontSize = 13.sp)
                     }
                 }
             }
@@ -267,6 +271,6 @@ private fun ModeRow(label: String, active: Boolean, onClick: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        if (active) Text("✓", color = Gold, fontSize = 15.sp)
+        if (active) Icon(Icons.Filled.Check, contentDescription = null, tint = Gold)
     }
 }

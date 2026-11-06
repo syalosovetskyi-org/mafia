@@ -15,11 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -37,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role as SemanticsRole
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.serg.mafia.model.GameViewModel
@@ -189,12 +195,14 @@ fun SetupScreen(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                                 color = if (active) Ink else Color(0xFFEDE7F2),
                                 fontSize = 14.sp,
                                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier
                                     .weight(1f)
                                     .defaultMinSize(minHeight = 48.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(if (active) Gold else Surface2)
-                                    .clickable(role = SemanticsRole.Button) { onLangChange(lang) }
+                                    .selectable(selected = active, role = SemanticsRole.RadioButton) { onLangChange(lang) }
                                     .padding(vertical = 12.dp),
                                 textAlign = TextAlign.Center,
                             )
@@ -251,7 +259,7 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun Stepper(value: Int, min: Int, max: Int, onChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        StepBtn("−") { if (value > min) onChange(value - 1) }
+        StepBtn(false, t("players_less")) { if (value > min) onChange(value - 1) }
         Text(
             "$value",
             fontSize = 30.sp,
@@ -259,12 +267,12 @@ private fun Stepper(value: Int, min: Int, max: Int, onChange: (Int) -> Unit) {
             color = Color(0xFFEDE7F2),
             modifier = Modifier.padding(horizontal = 16.dp),
         )
-        StepBtn("+") { if (value < max) onChange(value + 1) }
+        StepBtn(true, t("players_more")) { if (value < max) onChange(value + 1) }
     }
 }
 
 @Composable
-private fun StepBtn(label: String, onClick: () -> Unit) {
+private fun StepBtn(isAdd: Boolean, contentDesc: String, onClick: () -> Unit) {
     Box(
         Modifier
             .size(48.dp)
@@ -273,7 +281,11 @@ private fun StepBtn(label: String, onClick: () -> Unit) {
             .clickable(role = SemanticsRole.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, fontSize = 24.sp, color = Gold, fontWeight = FontWeight.Bold)
+        Icon(
+            if (isAdd) Icons.Filled.Add else Icons.Filled.Remove,
+            contentDescription = contentDesc,
+            tint = Gold,
+        )
     }
 }
 
@@ -315,13 +327,13 @@ private fun TimeRow(title: String, seconds: Int, onChange: (Int) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, color = Color(0xFFEDE7F2), modifier = Modifier.weight(1f))
-        StepBtn("−") { if (seconds > 15) onChange(seconds - 15) }
+        StepBtn(false, t("time_less")) { if (seconds > 15) onChange(seconds - 15) }
         Text(
             t("seconds_short", seconds),
             color = Gold,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 12.dp),
         )
-        StepBtn("+") { if (seconds < 180) onChange(seconds + 15) }
+        StepBtn(true, t("time_more")) { if (seconds < 180) onChange(seconds + 15) }
     }
 }

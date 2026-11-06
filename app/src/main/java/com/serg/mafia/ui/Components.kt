@@ -3,7 +3,6 @@ package com.serg.mafia.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -86,14 +87,14 @@ fun Screen(
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         // Справа поверх шапки висят иконки ведущего (домой / шпаргалка / музыка) —
-        // оставляем им место, иначе на узком экране они наезжают на заголовок.
+        // оставляем им місце 132dp (три іконки по 44dp), інакше на вузькому екрані вони наїжджають на заголовок.
         Text(
             title,
             style = MaterialTheme.typography.headlineMedium,
             color = Color(0xFFEDE7F2),
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(end = 116.dp),
+            modifier = Modifier.padding(end = 132.dp),
         )
         if (subtitle != null) {
             Spacer(Modifier.height(4.dp))
@@ -103,7 +104,7 @@ fun Screen(
                 color = Muted,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(end = 116.dp),
+                modifier = Modifier.padding(end = 132.dp),
             )
         }
         Spacer(Modifier.height(14.dp))
@@ -129,30 +130,32 @@ fun BigButton(
         enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .heightIn(min = 54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = Color.White),
     ) {
-        Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = TextAlign.Center)
     }
 }
 
 @Composable
-fun GhostButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun GhostButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.height(48.dp),
+        enabled = enabled,
+        modifier = modifier.heightIn(min = 48.dp),
         shape = RoundedCornerShape(14.dp),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        // На телефоне кнопки в ряду узкие: текст ужимаем, но не рвём на полуслове.
+        // На телефоне кнопки в ряду узкие: текст ужимаем до двух строк.
         Text(
             text,
             color = Muted,
             fontSize = 14.sp,
-            maxLines = 1,
-            softWrap = false,
+            maxLines = 2,
+            softWrap = true,
             overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -197,7 +200,12 @@ fun PlayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .then(if (onClick != null) Modifier.clickable(role = SemanticsRole.Button) { onClick() } else Modifier),
+            .then(
+                if (onClick != null)
+                    Modifier.selectable(selected = selected, role = SemanticsRole.RadioButton) { onClick() }
+                else
+                    Modifier
+            ),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) Blood.copy(alpha = 0.22f) else Surface1,
@@ -249,9 +257,15 @@ fun PlayerRow(
                 }
             }
             if (badge != null) {
+                // Текстовий колір бейджа: Blood і RedTeam занадто темні для тексту на 14% тлі.
+                val badgeTextColor = when (badgeColor) {
+                    Blood -> ErrorRed
+                    RedTeam -> RedTeamLight
+                    else -> badgeColor
+                }
                 Text(
                     badge,
-                    color = badgeColor,
+                    color = badgeTextColor,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp,
                     modifier = Modifier
@@ -268,6 +282,7 @@ fun PlayerRow(
                     fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
             }
             extra?.invoke()
@@ -332,7 +347,7 @@ fun SpeechTimer(
             "%d:%02d".format(remaining / 60, remaining % 60),
             fontSize = 56.sp,
             fontWeight = FontWeight.Bold,
-            color = if (remaining <= 10) Blood else Color(0xFFEDE7F2),
+            color = if (remaining <= 10) ErrorRed else Color(0xFFEDE7F2),
         )
         Spacer(Modifier.height(6.dp))
         LinearProgressIndicator(
@@ -351,9 +366,10 @@ fun SpeechTimer(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Surface2),
             ) {
+                // Icon всередині кнопки з текстом — contentDescription=null (текст є підписом)
                 Icon(
                     if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (running) t("pause") else t("start"),
+                    contentDescription = null,
                     tint = Gold,
                 )
                 Spacer(Modifier.width(6.dp))
@@ -368,7 +384,7 @@ fun SpeechTimer(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Surface2),
             ) {
-                Icon(Icons.Filled.Refresh, contentDescription = t("reset"), tint = Moon)
+                Icon(Icons.Filled.Refresh, contentDescription = null, tint = Moon)
                 Spacer(Modifier.width(6.dp))
                 Text(t("reset"), color = Color(0xFFEDE7F2))
             }
@@ -390,10 +406,11 @@ fun MiniPlayer() {
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Описуємо дію («Вимкнути/Увімкнути музику»), а не поточний стан іконки
             IconButton(onClick = { music.enableMusic(!music.enabled) }) {
                 Icon(
                     if (music.enabled) Icons.Filled.MusicNote else Icons.Filled.MusicOff,
-                    contentDescription = if (music.enabled) t("music_off") else t("music"),
+                    contentDescription = if (music.enabled) t("music_toggle_off") else t("music_toggle_on"),
                     tint = if (music.enabled) Gold else Muted,
                 )
             }
@@ -404,20 +421,20 @@ fun MiniPlayer() {
                 maxLines = 1,
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(role = SemanticsRole.Button) { showVolume = !showVolume },
+                    .selectable(selected = false, role = SemanticsRole.Button) { showVolume = !showVolume },
                 textAlign = TextAlign.Center,
             )
             IconButton(onClick = { music.toggle() }, enabled = music.enabled) {
                 Icon(
                     if (music.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (music.isPlaying) t("pause") else t("start"),
+                    contentDescription = if (music.isPlaying) t("pause") else t("play_music"),
                     tint = if (music.enabled) Moon else Muted,
                 )
             }
             IconButton(onClick = { music.next() }, enabled = music.enabled) {
                 Icon(
                     Icons.Filled.SkipNext,
-                    contentDescription = t("next"),
+                    contentDescription = t("next_track"),
                     tint = if (music.enabled) Moon else Muted,
                 )
             }

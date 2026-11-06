@@ -13,8 +13,15 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +49,7 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
     var nominateOpen by remember { mutableStateOf(false) }
     var nomTableOpen by remember { mutableStateOf(false) }
     var foulOpen by remember { mutableStateOf(false) }
+    var foulConfirmId by remember { mutableStateOf<Int?>(null) }
 
     Screen(
         title = if (intro) t("intro_day_title") else t("day_title", s.dayNumber),
@@ -66,10 +74,13 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    GhostButton(t("foul_plus"), Modifier.weight(1f)) { vm.addFoul(speaker.id) }
+                    GhostButton(t("foul_plus"), Modifier.weight(1f)) {
+                        if (speaker.fouls >= 2) foulConfirmId = speaker.id else vm.addFoul(speaker.id)
+                    }
                     GhostButton(
                         if (speaker.fouls > 0) t("foul_minus") else t("no_fouls"),
                         Modifier.weight(1f),
+                        enabled = speaker.fouls > 0,
                     ) { if (speaker.fouls > 0) vm.removeFoul(speaker.id) }
                     GhostButton(t("all_fouls"), Modifier.weight(1f)) { foulOpen = true }
                 }
@@ -78,7 +89,12 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
             }
         },
     ) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -95,7 +111,7 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
                         color = Gold,
                     )
                     if (speaker.fouls > 0) {
-                        Text(t("fouls_of", speaker.fouls), color = Blood, fontSize = 13.sp)
+                        Text(t("fouls_of", speaker.fouls), color = ErrorRed, fontSize = 13.sp)
                     }
                 }
             }
@@ -110,8 +126,8 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
             if (fouled.isNotEmpty()) {
                 Text(t("fouls_label"), color = Moon, fontSize = 13.sp)
                 Spacer(Modifier.height(4.dp))
-                LazyColumn(Modifier.heightIn(max = 160.dp)) {
-                    items(fouled, key = { it.id }) { p ->
+                Column(Modifier.heightIn(max = 160.dp).verticalScroll(rememberScrollState())) {
+                    fouled.forEach { p ->
                         PlayerRow(
                             player = p,
                             badge = "${p.fouls}",
@@ -124,8 +140,8 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
                             },
                             onClick = { foulOpen = true },
                             extra = {
-                                TextButton(onClick = { vm.removeFoul(p.id) }) {
-                                    Text("−", color = Moon, fontSize = 20.sp)
+                                IconButton(onClick = { vm.removeFoul(p.id) }) {
+                                    Icon(Icons.Filled.Remove, contentDescription = t("foul_minus"), tint = Moon)
                                 }
                             },
                         )
@@ -136,8 +152,8 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
             if (!intro && s.candidates.isNotEmpty()) {
                 Text(t("on_vote"), color = Moon, fontSize = 13.sp)
                 Spacer(Modifier.height(4.dp))
-                LazyColumn(Modifier.heightIn(max = 220.dp)) {
-                    items(s.candidates, key = { it }) { candidateId ->
+                Column(Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState())) {
+                    s.candidates.forEach { candidateId ->
                         val by = s.nominatedBy(candidateId)
                         PlayerRow(
                             player = s.player(candidateId),
@@ -158,6 +174,27 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
                 fontSize = 12.sp,
             )
         }
+    }
+
+    // 3rd-foul confirmation (from main screen foul+ button)
+    foulConfirmId?.let { pid ->
+        val pp = s.player(pid)
+        AlertDialog(
+            onDismissRequest = { foulConfirmId = null },
+            containerColor = Surface1,
+            title = { Text(t("foul3_confirm_title"), color = Color(0xFFEDE7F2)) },
+            text = { Text(t("foul3_confirm_body", pp.name), color = Muted) },
+            confirmButton = {
+                TextButton(onClick = { vm.addFoul(pid); foulConfirmId = null }) {
+                    Text(t("foul3_confirm_yes"), color = ErrorRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { foulConfirmId = null }) {
+                    Text(t("cancel"), color = Gold)
+                }
+            },
+        )
     }
 
     if (nominateOpen) {
@@ -213,7 +250,7 @@ fun PickPlayerDialog(
             TextButton(onClick = onDismiss) { Text(t("cancel"), color = Muted) }
         },
         dismissButton = onClear?.let { clear ->
-            { TextButton(onClick = clear) { Text(t("remove"), color = Blood) } }
+            { TextButton(onClick = clear) { Text(t("remove"), color = ErrorRed) } }
         },
     )
 }
@@ -246,8 +283,8 @@ fun NominationTableDialog(vm: GameViewModel, onDismiss: () -> Unit) {
                             onClick = { picking = p.id },
                             extra = {
                                 if (target != null) {
-                                    TextButton(onClick = { vm.clearNomination(p.id) }) {
-                                        Text("×", color = Moon, fontSize = 18.sp)
+                                    IconButton(onClick = { vm.clearNomination(p.id) }) {
+                                        Icon(Icons.Filled.Close, contentDescription = t("remove"), tint = Moon)
                                     }
                                 }
                             },
@@ -284,6 +321,8 @@ fun NominationTableDialog(vm: GameViewModel, onDismiss: () -> Unit) {
 @Composable
 fun FoulDialog(vm: GameViewModel, onDismiss: () -> Unit) {
     val s = vm.s
+    var foulConfirmId by remember { mutableStateOf<Int?>(null) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface1,
@@ -302,11 +341,11 @@ fun FoulDialog(vm: GameViewModel, onDismiss: () -> Unit) {
                             player = p,
                             badge = if (p.fouls > 0) "${p.fouls}" else null,
                             badgeColor = Blood,
-                            onClick = { vm.addFoul(p.id) },
+                            onClick = { if (p.fouls >= 2) foulConfirmId = p.id else vm.addFoul(p.id) },
                             extra = {
                                 if (p.fouls > 0) {
-                                    TextButton(onClick = { vm.removeFoul(p.id) }) {
-                                        Text("−", color = Moon, fontSize = 20.sp)
+                                    IconButton(onClick = { vm.removeFoul(p.id) }) {
+                                        Icon(Icons.Filled.Remove, contentDescription = t("foul_minus"), tint = Moon)
                                     }
                                 }
                             },
@@ -319,6 +358,27 @@ fun FoulDialog(vm: GameViewModel, onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text(t("ok"), color = Gold) }
         },
     )
+
+    // 3rd-foul confirmation inside FoulDialog
+    foulConfirmId?.let { pid ->
+        val pp = s.player(pid)
+        AlertDialog(
+            onDismissRequest = { foulConfirmId = null },
+            containerColor = Surface1,
+            title = { Text(t("foul3_confirm_title"), color = Color(0xFFEDE7F2)) },
+            text = { Text(t("foul3_confirm_body", pp.name), color = Muted) },
+            confirmButton = {
+                TextButton(onClick = { vm.addFoul(pid); foulConfirmId = null }) {
+                    Text(t("foul3_confirm_yes"), color = ErrorRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { foulConfirmId = null }) {
+                    Text(t("cancel"), color = Gold)
+                }
+            },
+        )
+    }
 }
 
 /** Экран-заглушка на случай, если круг речей закончился в неожиданной фазе. */

@@ -3,6 +3,7 @@ package com.serg.mafia.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +15,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +54,12 @@ fun MorningScreen(vm: GameViewModel) {
         subtitle = t("morning_sub", s.nightNumber),
         bottom = { BigButton(t("start_day")) { vm.startDay() } },
     ) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             if (killed.isEmpty()) {
                 Spacer(Modifier.height(24.dp))
                 Text(t("all_survived"), style = MaterialTheme.typography.headlineMedium, color = Gold)
@@ -92,6 +106,7 @@ fun VoteScreen(vm: GameViewModel) {
     // Кандидаты — те, кого выставили, плюс добавленные ведущим вручную.
     val candidates = s.votes.keys.toList().ifEmpty { s.candidates }
     var addOpen by remember { mutableStateOf(false) }
+    var skipConfirmOpen by remember { mutableStateOf(false) }
 
     Screen(
         title = t("vote_title"),
@@ -121,7 +136,7 @@ fun VoteScreen(vm: GameViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     GhostButton(t("add_player"), Modifier.weight(1f)) { addOpen = true }
-                    GhostButton(t("nobody_out"), Modifier.weight(1f)) { vm.skipVote() }
+                    GhostButton(t("nobody_out"), Modifier.weight(1f)) { skipConfirmOpen = true }
                 }
             }
         },
@@ -157,10 +172,10 @@ fun VoteScreen(vm: GameViewModel) {
                             fontSize = 12.sp,
                         )
                     }
-                    VoteStep("−") { vm.setVote(id, votes - 1) }
+                    VoteStep(false, t("vote_minus", p.name)) { vm.setVote(id, votes - 1) }
                     Text(
                         "$votes",
-                        color = if (isLeader) Blood else Gold,
+                        color = if (isLeader) ErrorRed else Gold,
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp,
                         modifier = Modifier
@@ -168,7 +183,7 @@ fun VoteScreen(vm: GameViewModel) {
                             .padding(horizontal = 6.dp),
                         textAlign = TextAlign.Center,
                     )
-                    VoteStep("+") { vm.setVote(id, votes + 1) }
+                    VoteStep(true, t("vote_plus", p.name)) { vm.setVote(id, votes + 1) }
                 }
                 if (leaders.size > 1 && isLeader) {
                     Row(
@@ -187,6 +202,25 @@ fun VoteScreen(vm: GameViewModel) {
     if (addOpen) {
         AddVoteCandidateDialog(vm) { addOpen = false }
     }
+
+    if (skipConfirmOpen) {
+        AlertDialog(
+            onDismissRequest = { skipConfirmOpen = false },
+            containerColor = Surface1,
+            title = { Text(t("nobody_out_confirm_title"), color = Color(0xFFEDE7F2)) },
+            text = { Text(t("nobody_out_confirm_body"), color = Muted) },
+            confirmButton = {
+                TextButton(onClick = { vm.skipVote(); skipConfirmOpen = false }) {
+                    Text(t("nobody_out"), color = ErrorRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { skipConfirmOpen = false }) {
+                    Text(t("cancel"), color = Gold)
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -204,20 +238,22 @@ private fun AddVoteCandidateDialog(vm: GameViewModel, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun VoteStep(label: String, onClick: () -> Unit) {
-    Text(
-        label,
-        color = Gold,
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
+private fun VoteStep(isAdd: Boolean, contentDesc: String, onClick: () -> Unit) {
+    Box(
+        Modifier
             .size(48.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Surface2)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(top = 8.dp),
-    )
+            .padding(8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            if (isAdd) Icons.Filled.Add else Icons.Filled.Remove,
+            contentDescription = contentDesc,
+            tint = Gold,
+        )
+    }
 }
 
 @Composable
@@ -226,8 +262,7 @@ fun GameOverScreen(vm: GameViewModel) {
     val winner = s.winner ?: Faction.RED
 
     Screen(
-        title = t(winnerKey(winner)),
-        subtitle = t("game_over"),
+        title = t("game_over"),
         bottom = {
             Column {
                 BigButton(t("new_game_same")) { vm.newGameSameTable() }
@@ -237,6 +272,15 @@ fun GameOverScreen(vm: GameViewModel) {
         },
     ) {
         LazyColumn(Modifier.fillMaxSize()) {
+            item {
+                // Переможець крупним блоком
+                Text(
+                    t(winnerKey(winner)),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = factionColor(winner),
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+            }
             items(s.players, key = { it.id }) { p ->
                 PlayerRow(
                     player = p,

@@ -82,7 +82,8 @@ fun NightScreen(vm: GameViewModel) {
             Spacer(Modifier.height(10.dp))
 
             if (actorBlocked) {
-                Banner(t("blocked_banner"), Blood)
+                // Fix 22: use ErrorRed (not Blood) for text in banners — Blood is 3.2-3.8:1
+                Banner(t("blocked_banner"), ErrorRed)
             }
 
             if (offerMiss) {
@@ -106,7 +107,8 @@ fun NightScreen(vm: GameViewModel) {
                     )
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        BigButton(t("miss_yes"), Modifier.weight(1f), color = Moon.copy(alpha = 0.7f)) {
+                        // Fix 25: use solid Moon instead of Moon@0.7 for sufficient contrast
+                        BigButton(t("miss_yes"), Modifier.weight(1f), color = Moon) {
                             vm.setFirstNightMiss(true)
                         }
                         BigButton(t("miss_no"), Modifier.weight(1f)) {

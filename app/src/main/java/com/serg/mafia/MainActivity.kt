@@ -18,10 +18,15 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -48,7 +53,7 @@ import com.serg.mafia.ui.DealScreen
 import com.serg.mafia.ui.EmptySpeechScreen
 import com.serg.mafia.ui.GameOverScreen
 import androidx.compose.ui.graphics.Color
-import com.serg.mafia.ui.Blood
+import com.serg.mafia.ui.ErrorRed
 import com.serg.mafia.ui.Gold
 import com.serg.mafia.ui.Lang
 import com.serg.mafia.ui.LocalLang
@@ -210,18 +215,24 @@ private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
         ) {
             androidx.compose.foundation.layout.Row {
                 if (s.phase != Phase.SETUP) {
-                    IconButton(onClick = { exitOpen = true }) {
-                        Icon(Icons.Filled.Home, contentDescription = t("to_setup"), tint = Gold)
-                    }
+                    HeaderIconButton(
+                        onClick = { exitOpen = true },
+                        icon = Icons.Filled.Home,
+                        text = t("to_setup"),
+                    )
                 }
                 if (s.phase != Phase.SETUP && s.phase != Phase.DEAL) {
-                    IconButton(onClick = { cheatOpen = true }) {
-                        Icon(Icons.Filled.List, contentDescription = t("cheatsheet"), tint = Gold)
-                    }
+                    HeaderIconButton(
+                        onClick = { cheatOpen = true },
+                        icon = Icons.Filled.List,
+                        text = t("cheatsheet"),
+                    )
                 }
-                IconButton(onClick = { musicOpen = true }) {
-                    Icon(Icons.Filled.Tune, contentDescription = t("music"), tint = Gold)
-                }
+                HeaderIconButton(
+                    onClick = { musicOpen = true },
+                    icon = Icons.Filled.MusicNote,
+                    text = t("music"),
+                )
             }
         }
     }
@@ -239,11 +250,29 @@ private fun Root(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                 TextButton(onClick = {
                     vm.backToSetup()
                     exitOpen = false
-                }) { Text(t("exit_yes"), color = Blood) }
+                }) { Text(t("exit_yes"), color = ErrorRed) }
             },
             dismissButton = {
                 TextButton(onClick = { exitOpen = false }) { Text(t("exit_no"), color = Gold) }
             },
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HeaderIconButton(
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        tooltip = { PlainTooltip { Text(text) } },
+        state = rememberTooltipState(),
+    ) {
+        IconButton(onClick = onClick) {
+            Icon(icon, contentDescription = text, tint = Gold)
+        }
     }
 }
