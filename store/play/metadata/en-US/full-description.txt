@@ -1,0 +1,52 @@
+One phone for the entire table: this app handles all the duties of a moderator for the classic party game Mafia (Werewolf). It deals secret roles, tracks who is who, guides night and day phases with a clear script, resolves night actions, keeps speech timers, tracks player fouls, and plays background music for each phase.
+
+Fully offline, no advertisements, no accounts or registrations, and zero runtime permissions required. Lightweight download (~2 MB).
+
+KEY FEATURES:
+
+1. Flexible Table Setup
+• From 4 to 20 players.
+• Automatic balance calculation (≈ one-third black team) with manual adjustment for easier or tougher games.
+• Optional roles: Don (Godfather), Sheriff (Detective), Doctor, Butterfly (Escort), Maniac (Serial Killer).
+• "First night in the air" mode (safe first night) for balanced red/black games.
+• Adjustable speech durations and intro round timing.
+
+2. Secret Role Dealing
+• Pass the phone around the table.
+• Players press and hold the card to reveal their role and portrait. Release to immediately hide it — no accidental role leaks to the next player.
+• Screenshot and screen-recording protection (FLAG_SECURE) on secret role screens.
+
+3. Step-by-Step Night Phase
+• Strict order of actions: Butterfly → Mafia → Don → Doctor → Sheriff → Maniac.
+• Only living eligible players appear on screen at each step.
+• Instant moderator hints: faction alignments (red/black) are shown during Sheriff's turn; the Sheriff is marked during Don's search.
+
+4. Automatic Morning Resolution
+• Night results are calculated automatically: Butterfly blocks target's action, Doctor saves the victim, Mafia and Maniac shots apply independently.
+• The morning screen clearly lists all casualties and their roles.
+
+5. Day Phase, Speeches & Timer
+• Clear queue of speakers for each round.
+• Interactive countdown timer: start, pause, reset, and an audio alert when time runs out.
+• Nominate players for voting directly during speeches.
+
+6. Foul System
+• 1 foul — verbal warning.
+• 2 fouls — skip the next speech round (one-time penalty).
+• 3 fouls — immediate disqualification and elimination from the game.
+• Easily add or remove fouls at any day phase, including introduction.
+
+7. Voting & Win Conditions
+• Vote on nominated candidates.
+• Vote counting, runoff votes, and moderator tie-breakers.
+• Automatic win detection for Town, Mafia, or Maniac.
+
+8. Cheatsheet & Event Log
+• One-tap cheatsheet: full overview of all players, their roles, and alive/eliminated status.
+• Event log tracks everything that happened during the game.
+• Quick exit back to setup at any time.
+
+9. Atmosphere & Soundtrack
+• Built-in procedural noir soundtrack: ambient loops for night, day, voting, plus sound effects (gong, gunshot, morning chime, timer alert).
+• Custom track support: pick your own music files or folders for each phase using the system file picker — without granting storage permissions.
+• Floating mini-player at the bottom of the screen to control playback.
