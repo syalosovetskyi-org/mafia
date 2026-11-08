@@ -78,6 +78,8 @@ fun SetupScreen(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                             value = setup.playerCount,
                             min = 4,
                             max = 20,
+                            lessDesc = t("players_less"),
+                            moreDesc = t("players_more"),
                             onChange = { v -> vm.updateSetup { it.copy(playerCount = v) } },
                         )
                         Spacer(Modifier.width(16.dp))
@@ -99,6 +101,8 @@ fun SetupScreen(vm: GameViewModel, onLangChange: (Lang) -> Unit) {
                             value = setup.mafiaTotal,
                             min = 1,
                             max = setup.maxMafia,
+                            lessDesc = t("mafia_less"),
+                            moreDesc = t("mafia_more"),
                             onChange = { v -> vm.updateSetup { it.copy(mafiaOverride = v) } },
                         )
                         Spacer(Modifier.width(16.dp))
@@ -257,9 +261,16 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Stepper(value: Int, min: Int, max: Int, onChange: (Int) -> Unit) {
+private fun Stepper(
+    value: Int,
+    min: Int,
+    max: Int,
+    lessDesc: String = t("players_less"),
+    moreDesc: String = t("players_more"),
+    onChange: (Int) -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        StepBtn(false, t("players_less")) { if (value > min) onChange(value - 1) }
+        StepBtn(false, lessDesc) { if (value > min) onChange(value - 1) }
         Text(
             "$value",
             fontSize = 30.sp,
@@ -267,7 +278,7 @@ private fun Stepper(value: Int, min: Int, max: Int, onChange: (Int) -> Unit) {
             color = Color(0xFFEDE7F2),
             modifier = Modifier.padding(horizontal = 16.dp),
         )
-        StepBtn(true, t("players_more")) { if (value < max) onChange(value + 1) }
+        StepBtn(true, moreDesc) { if (value < max) onChange(value + 1) }
     }
 }
 
