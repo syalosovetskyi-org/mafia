@@ -52,8 +52,10 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" >/dev/null
 
+      # Два flavor'а (personal и play): у задач без имени flavor'а нет однозначной
+      # цели, поэтому тесты гоняем в обоих явно.
       - name: Тесты логики ведущего
-        run: ./gradlew --no-daemon testDebugUnitTest
+        run: ./gradlew --no-daemon testPersonalDebugUnitTest testPlayDebugUnitTest
 
       - name: Отладочная сборка
         run: ./gradlew --no-daemon assembleDebug
@@ -61,5 +63,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: mafia-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
