@@ -28,6 +28,9 @@ class GameViewModel(
 
     companion object {
         const val KEY_STATE = "mafia_game_state"
+
+        /** Фазы, в которых третий фол этого дня ещё можно отменить. */
+        private val FOUL_UNDO_PHASES = setOf(Phase.INTRO_DAY, Phase.DAY, Phase.VOTE)
     }
 
     /** Как называть игрока без имени — шаблон приходит из UI на языке интерфейса. */
@@ -379,20 +382,35 @@ class GameViewModel(
         s = withWinCheck(st)
     }
 
-    fun removeFoul(playerId: Int) {
+    /**
+     * Можно ли снять фол. Выбывшего по фолам возвращаем только в тот же день, пока
+     * идут речи или голосование: это исправление промаха ведущего. Позже за столом
+     * уже прошла ночь и голосования без него, и воскрешение переписало бы партию.
+     */
+    fun canRemoveFoul(playerId: Int): Boolean {
         val p = s.player(playerId)
-        if (p.fouls == 0) return
+        if (p.fouls == 0) return false
+        if (p.alive || p.deathReasonKey != "death_fouls") return p.alive
+        return p.deathDay == s.dayNumber && s.phase in FOUL_UNDO_PHASES
+    }
+
+    fun removeFoul(playerId: Int) {
+        if (!canRemoveFoul(playerId)) return
+        val p = s.player(playerId)
         val fouls = p.fouls - 1
+        val revived = !p.alive
         val updated = p.copy(
             fouls = fouls,
             speechSkipPending = if (fouls < 2) false else p.speechSkipPending,
-            alive = if (p.deathReasonKey == "death_fouls") true else p.alive,
-            deathReasonKey = if (p.deathReasonKey == "death_fouls") null else p.deathReasonKey,
+            alive = true,
+            deathReasonKey = if (revived) null else p.deathReasonKey,
         )
-        s = s.copy(
+        val st = s.copy(
             players = s.players.map { if (it.id == playerId) updated else it },
             log = s.log + LogEntry("log_foul_removed", listOf(p.name, fouls)),
         )
+        // Вернувшийся игрок меняет расклад сил: паритет мог наступить прямо сейчас.
+        s = if (revived) withWinCheck(st) else st
     }
 
     // ------------------------------------------------------------- голосование

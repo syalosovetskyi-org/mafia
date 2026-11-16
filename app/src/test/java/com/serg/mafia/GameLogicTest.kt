@@ -251,6 +251,72 @@ class GameLogicTest {
     }
 
     @Test
+    fun `снятый в тот же день третий фол возвращает игрока`() {
+        val vm = game()
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+        val target = vm.s.alivePlayers.first { it.role == Role.CIVILIAN && it.id != vm.s.speakerId }
+        repeat(3) { vm.addFoul(target.id) }
+        assertFalse(vm.s.player(target.id).alive)
+
+        // Ведущий ошибся кнопкой и сразу исправился — игрок снова в игре.
+        assertTrue(vm.canRemoveFoul(target.id))
+        vm.removeFoul(target.id)
+        assertTrue(vm.s.player(target.id).alive)
+        assertEquals(2, vm.s.player(target.id).fouls)
+        assertNull(vm.s.player(target.id).deathReasonKey)
+    }
+
+    @Test
+    fun `третий фол прошлого дня снять нельзя, выбывший не воскресает`() {
+        val vm = game()
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+        val target = vm.s.alivePlayers.first { it.role.isBlack && it.id != vm.s.speakerId }
+        repeat(3) { vm.addFoul(target.id) }
+        assertFalse(vm.s.player(target.id).alive)
+
+        // День закончился, прошла ночь, наступил следующий день.
+        vm.finishSpeechRound()
+        assertEquals(Phase.NIGHT, vm.s.phase)
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+
+        assertFalse(vm.canRemoveFoul(target.id))
+        vm.removeFoul(target.id)
+        assertFalse(vm.s.player(target.id).alive)
+        assertEquals("death_fouls", vm.s.player(target.id).deathReasonKey)
+        assertEquals(3, vm.s.player(target.id).fouls)
+    }
+
+    @Test
+    fun `возврат игрока снятием фола проверяет победу`() {
+        val vm = game()
+        vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
+        repeat(vm.s.nightSteps.size) { vm.nightNext() }
+        vm.startDay()
+        val blackCount = vm.s.aliveBlack.size
+        assertTrue("сценарию нужно минимум двое чёрных", blackCount >= 2)
+        val black = vm.s.alivePlayers.first { it.role.isBlack && it.id != vm.s.speakerId }
+        repeat(3) { vm.addFoul(black.id) }
+        // Выводим мирных, пока их не станет ровно столько, сколько было чёрных:
+        // без вернувшегося чёрного это ещё не паритет.
+        while (vm.s.alivePlayers.count { !it.role.isBlack } > blackCount) {
+            val red = vm.s.alivePlayers.first { !it.role.isBlack && it.id != vm.s.speakerId }
+            repeat(3) { vm.addFoul(red.id) }
+        }
+        assertNull(vm.s.winner)
+        assertEquals(Phase.DAY, vm.s.phase)
+
+        vm.removeFoul(black.id)
+        assertTrue(vm.s.player(black.id).alive)
+        assertEquals(Faction.BLACK, vm.s.winner)
+        assertEquals(Phase.GAME_OVER, vm.s.phase)
+    }
+
+    @Test
     fun `выставления пишутся по каждому игроку, кандидат не дублируется`() {
         val vm = game()
         vm.finishDeal(); vm.finishIntro(); vm.finishSpeechRound()
