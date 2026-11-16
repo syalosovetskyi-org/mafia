@@ -231,8 +231,12 @@ class MusicController(context: Context) {
         } else {
             val item = chosen[indexInTrack % chosen.size]
             currentTitle = item.name
+            // Плеер создаётся до runCatching: если setDataSource/prepare упадёт, его
+            // нативные ресурсы надо отпустить, иначе каждая смена фазы с битым URI
+            // оставляет висеть ещё один MediaPlayer, пока система не перестанет их выдавать.
+            val candidate = MediaPlayer()
             runCatching {
-                MediaPlayer().apply {
+                candidate.apply {
                     setAudioAttributes(
                         AudioAttributes.Builder()
                             .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -243,7 +247,10 @@ class MusicController(context: Context) {
                     isLooping = chosen.size == 1
                     prepare()
                 }
-            }.onFailure { CrashReporter.recordException(it) }.getOrNull()
+            }.onFailure {
+                CrashReporter.recordException(it)
+                runCatching { candidate.release() }.onFailure { e -> CrashReporter.recordException(e) }
+            }.getOrNull()
         } ?: run {
             // Битый или отозванный URI — не роняем партию, откатываемся на встроенный.
             currentTitle = builtinTitle(track)
@@ -270,7 +277,7 @@ class MusicController(context: Context) {
     }
 
     fun pause() {
-        runCatching { player?.pause() }
+        runCatching { player?.pause() }.onFailure { CrashReporter.recordException(it) }
         isPlaying = false
     }
 
@@ -278,7 +285,15 @@ class MusicController(context: Context) {
         if (!enabled) return
         val track = currentTrack ?: return
         if (mode(track) == PhaseMode.SILENCE) return
-        if (player == null) startCurrent() else runCatching { player?.start() }
+        if (player == null) {
+            startCurrent()
+        } else {
+            // Плеер в состоянии Error не стартует: пересобираем его, а не рисуем «играет» над тишиной.
+            runCatching { player?.start() }.onFailure {
+                CrashReporter.recordException(it)
+                startCurrent()
+            }
+        }
         isPlaying = player != null
     }
 
@@ -298,12 +313,12 @@ class MusicController(context: Context) {
     fun changeVolume(v: Float) {
         volume = v.coerceIn(0f, 1f)
         prefs.edit().putFloat("volume", volume).apply()
-        runCatching { player?.setVolume(volume, volume) }
+        runCatching { player?.setVolume(volume, volume) }.onFailure { CrashReporter.recordException(it) }
     }
 
     fun sfx(sound: Sfx) {
         if (!enabled) return
-        runCatching { sfxPlayer?.release() }
+        runCatching { sfxPlayer?.release() }.onFailure { CrashReporter.recordException(it) }
         sfxPlayer = MediaPlayer.create(app, sound.resId)?.apply {
             setVolume(1f, 1f)
             setOnCompletionListener { it.release(); if (sfxPlayer === it) sfxPlayer = null }
@@ -312,11 +327,11 @@ class MusicController(context: Context) {
     }
 
     private fun release() {
-        runCatching {
-            player?.setOnCompletionListener(null)
-            player?.stop()
-            player?.release()
-        }
+        // stop() падает в некоторых состояниях плеера — release() должен выполниться всё равно,
+        // поэтому каждый шаг в своём runCatching.
+        runCatching { player?.setOnCompletionListener(null) }.onFailure { CrashReporter.recordException(it) }
+        runCatching { player?.stop() }.onFailure { CrashReporter.recordException(it) }
+        runCatching { player?.release() }.onFailure { CrashReporter.recordException(it) }
         player = null
     }
 

@@ -3,6 +3,15 @@ name: release-apk
 # Тег vX.Y.Z собирает подписанный релизный APK и кладёт его в релиз GitHub.
 # Ручной запуск (workflow_dispatch) делает тот же APK, но версией 0.0.<run>-dev
 # и без создания релиза — чтобы можно было проверить пайплайн, не плодя теги.
+# Пока секретов ключа нет, ручной запуск идёт пробным (dry run): APK собирается
+# отладочной подписью, проверка релизного сертификата пропускается с warning.
+# Тег без секретов по-прежнему падает — неподписанный релиз не выпускаем.
+#
+# Flavor'ов два (personal и play), поэтому каждая задача Gradle называет flavor
+# явно: testDebugUnitTest без него неоднозначен, а APK лежат в
+# apk/<flavor>/release/app-<flavor>-release.apk. В релиз кладутся оба:
+# mafia-<версия>-personal.apk (отдельный пакет, ставится рядом с версией из
+# Google Play) и mafia-<версия>-play.apk (пакет com.serg.mafia).
 #
 # Ключ подписи берётся из секретов ОКРУЖЕНИЯ `release`, а не из секретов
 # репозитория (Settings → Environments → release → Environment secrets):
@@ -66,8 +75,19 @@ jobs:
           "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" >/dev/null
 
       - name: Релизный ключ из секретов
+        env:
+          HAS_KEY: ${{ secrets.MAFIA_KEYSTORE_B64 != '' }}
         run: |
           set -eu
+          if [ "$HAS_KEY" != "true" ]; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::warning::MAFIA_KEYSTORE_B64 не задан — пробный запуск, APK с отладочной подписью"
+              echo "DRY_RUN=1" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "::error::MAFIA_KEYSTORE_B64 не задан — тег без ключа подписи не выпускаем"
+            exit 1
+          fi
           echo "${{ secrets.MAFIA_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/mafia-release.jks"
           test -s "$RUNNER_TEMP/mafia-release.jks"
           echo "MAFIA_KEYSTORE_FILE=$RUNNER_TEMP/mafia-release.jks" >> "$GITHUB_ENV"
@@ -84,7 +104,7 @@ jobs:
           echo "Собираем версию $VERSION (versionCode ${{ github.run_number }})"
 
       - name: Тесты логики ведущего
-        run: ./gradlew --no-daemon testDebugUnitTest
+        run: ./gradlew --no-daemon testPersonalDebugUnitTest testPlayDebugUnitTest
 
       - name: Сборка подписанного APK
         env:
@@ -93,18 +113,27 @@ jobs:
           MAFIA_KEY_PASSWORD: ${{ secrets.MAFIA_KEYSTORE_PASSWORD }}
         run: |
           set -eu
-          ./gradlew --no-daemon assembleRelease \
+          ./gradlew --no-daemon assemblePersonalRelease assemblePlayRelease \
             -PversionName="$APP_VERSION" -PversionCode=${{ github.run_number }}
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk "out/mafia-$APP_VERSION.apk"
+          for flavor in personal play; do
+            cp "app/build/outputs/apk/$flavor/release/app-$flavor-release.apk" \
+              "out/mafia-$APP_VERSION-$flavor.apk"
+          done
           ls -la out
 
       - name: Проверить, что APK подписан релизным ключом
         run: |
           set -eu
+          if [ "${DRY_RUN:-0}" = "1" ]; then
+            echo "::warning::Пробный запуск: релизный сертификат НЕ проверялся (ключа нет)"
+            exit 0
+          fi
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
-          "$APKSIGNER" verify --print-certs "out/mafia-$APP_VERSION.apk" | tee signer.txt
-          grep -q "CN=Serhii Yalosovetskyi" signer.txt
+          for flavor in personal play; do
+            "$APKSIGNER" verify --print-certs "out/mafia-$APP_VERSION-$flavor.apk" | tee "signer-$flavor.txt"
+            grep -q "CN=Serhii Yalosovetskyi" "signer-$flavor.txt"
+          done
 
       - name: Релиз в GitHub
         if: github.event_name == 'push'
@@ -117,7 +146,8 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "Мафия $APP_VERSION" \
             --notes "$BODY" \
-            "out/mafia-$APP_VERSION.apk"
+            "out/mafia-$APP_VERSION-personal.apk" \
+            "out/mafia-$APP_VERSION-play.apk"
           gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets \
             --jq '.assets[] | "asset: \(.url)"'
 

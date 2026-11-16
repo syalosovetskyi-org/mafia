@@ -140,8 +140,11 @@ fun SpeechScreen(vm: GameViewModel, intro: Boolean) {
                             },
                             onClick = { foulOpen = true },
                             extra = {
-                                IconButton(onClick = { vm.removeFoul(p.id) }) {
-                                    Icon(Icons.Filled.Remove, contentDescription = t("foul_minus"), tint = Moon)
+                                // Выбывшего прошлых дней не воскрешаем: минус только там, где он сработает.
+                                if (vm.canRemoveFoul(p.id)) {
+                                    IconButton(onClick = { vm.removeFoul(p.id) }) {
+                                        Icon(Icons.Filled.Remove, contentDescription = t("foul_minus"), tint = Moon)
+                                    }
                                 }
                             },
                         )

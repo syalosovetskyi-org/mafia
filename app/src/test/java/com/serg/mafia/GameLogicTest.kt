@@ -261,6 +261,7 @@ class GameLogicTest {
         assertFalse(vm.s.player(target.id).alive)
 
         // Ведущий ошибся кнопкой и сразу исправился — игрок снова в игре.
+        assertTrue(vm.canRemoveFoul(target.id))
         vm.removeFoul(target.id)
         assertTrue(vm.s.player(target.id).alive)
         assertEquals(2, vm.s.player(target.id).fouls)
@@ -283,6 +284,7 @@ class GameLogicTest {
         repeat(vm.s.nightSteps.size) { vm.nightNext() }
         vm.startDay()
 
+        assertFalse(vm.canRemoveFoul(target.id))
         vm.removeFoul(target.id)
         assertFalse(vm.s.player(target.id).alive)
         assertEquals("death_fouls", vm.s.player(target.id).deathReasonKey)
